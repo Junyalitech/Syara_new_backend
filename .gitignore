@@ -1,0 +1,31 @@
+# Node.js standard .gitignore
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+dist/
+build/
+.env
+.env.*
+.DS_Store
+*.log
+coverage/
+
+# Ignore userImages folder inside public
+public/userImages/
+
+# Optional: OS-specific files
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Ignore by editor
+*.sublime-workspace
+*.sublime-project
+
+# Ignore test output
+*.test.js.snap

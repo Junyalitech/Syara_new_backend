@@ -1,0 +1,45 @@
+
+                                   
+                                     <!DOCTYPE html>
+                                     <html>
+                                     <head>
+                                         <title>Action Code Page</title>
+                                         <style>
+                                             body {
+                                                 font-family: Arial, sans-serif;
+                                                 text-align: center;
+                                                 padding: 40px;
+                                             }
+                                             button {
+                                                 padding: 10px 20px;
+                                                 margin: 10px;
+                                                 font-size: 16px;
+                                             }
+                                         </style>
+                                     </head>
+                                     <body>
+                                     
+                                         <h1>Action Code Page</h1>
+                                         <p>Click a button below to perform an action.</p>
+                                     
+                                         <button onclick="showMessage()">Show Message</button>
+                                         <button onclick="changeBackground()">Change Background Color</button>
+                                         <button onclick="resetPage()">Reset</button>
+                                     
+                                         <script>
+                                             function showMessage() {
+                                                 alert("Hello! This is an action message.");
+                                             }
+                                     
+                                             function changeBackground() {
+                                                 document.body.style.backgroundColor = "#" + Math.floor(Math.random()*16777215).toString(16);
+                                             }
+                                     
+                                             function resetPage() {
+                                                 location.reload();
+                                             }
+                                         </script>
+                                     
+                                     </body>
+                                     </html>
+                                      
