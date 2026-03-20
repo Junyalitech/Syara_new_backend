@@ -14,7 +14,7 @@ build/
 coverage/
 
 # Ignore userImages folder inside public
-public/userImages/
+# public/userImages/
 
 # Optional: OS-specific files
 Thumbs.db
