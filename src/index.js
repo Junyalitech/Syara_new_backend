@@ -26,10 +26,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(cors()); // Enable 
-app.use(cors({
-  origin: 'http://localhost:5173', // Change this to your frontend URL
-  credentials: true
-}));
+// app.use(cors());
 app.use(express.json());
 
 // Serve static files from the 'public' directory
