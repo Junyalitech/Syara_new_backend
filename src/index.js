@@ -31,7 +31,7 @@ app.use(cors()); // Enable
 app.use(express.json());
 
 // Serve static files from the 'public' directory
-app.use('/userImages', express.static(path.join(__dirname, '../public/userImages')))
+app.use('/public/userImages', express.static(path.join(__dirname, '../public/userImages')))
 
 // Use routes
 app.get('/', (req, res) => {
