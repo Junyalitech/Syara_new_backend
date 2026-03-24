@@ -10,7 +10,7 @@ const allroutes = require('./moduls/routes/allroutes');
 // ye hamri server file h 
 const ordernew = require('./moduls/routes/order');
 const cors = require("cors");
-// Load environment variables from .env file
+// Load environment variables from .env file  
 require('dotenv').config();
 
 const app = express();
@@ -25,14 +25,18 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+
 app.use(cors()); // Enable 
 // app.use(cors());
 app.use(express.json());
 
 // Serve static files from the 'public' directory
-app.use('/public', express.static(path.join(__dirname, '../public')));
+app.use('/userImages', express.static(path.join(__dirname, '../public/userImages')))
 
 // Use routes
+app.get('/', (req, res) => {
+  res.send('Welcome to the API');
+});
 
 app.use(imageRoutes);
 app.use(categoryRoutes);
