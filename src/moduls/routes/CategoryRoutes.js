@@ -22,7 +22,7 @@ router.put('/categories/:slug',upload.single('image'), categoryController.update
 // Delete a category by ID
 router.delete('/categories/:id', categoryController.deleteCategory);
 router.get('/search/api', categoryController.searchItems); // Search items by name
-
+router.post('/add-category-type', upload.single('image'), categoryController.addCategoryType);
 
 // Route to create a product
 router.post('/products', upload.fields([
@@ -49,7 +49,7 @@ router.get('/products/new-launch', productController.getNewLaunch);
 router.get('/products/our-combo-offer', productController.getOurComboOfer);
 
 router.get('/products/:slug', productController.getProduct);
-
+router.get('/top-rated', productController.getTopRatedProducts);
 ///user routes 
 
 

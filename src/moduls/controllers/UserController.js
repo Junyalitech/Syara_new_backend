@@ -2,12 +2,15 @@ const { hashPassword, comparePassword } = require('../helpers/authHelper');
 const userModel = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 // Register Controller
 const registerController = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role } = req.body;
+    const { name, email, password, phone, address, role, } = req.body;
 
-    if (!name || !email || !password || !phone || !address || !role) {
+    if (!name || !email || !password || !phone  || !role) {
       return res.status(400).send({ error: "All fields are required" });
     }
 
@@ -26,15 +29,21 @@ const registerController = async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
+
+    // ✅ OTP generate
+    const otp = generateOTP();
     const user = await userModel.create({
       name,
       email,
       phone,
-      address,
+      address: address || 'NA', // Make address optional
       password: hashedPassword,
       role, // Save the role
+      otp,
+      otpExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 min
+      isVerified: false
     });
-
+     console.log("User OTP:", otp);
     return res.status(201).send({
       success: true,
       message: "User registered successfully",
@@ -49,7 +58,6 @@ const registerController = async (req, res) => {
     });
   }
 };
-
 // Login Controller
 const loginController = async (req, res) => {
   try {
@@ -117,8 +125,123 @@ const logoutController = (req, res) => {
   });
 };
 
+const addAddressController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { updateaddress } = req.body;
+
+    // ✅ correct validation
+    if (!updateaddress) {
+      return res.status(400).json({ message: "Address is required" });
+    }
+
+    const user = await userModel.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let addresses = user.updateaddress || [];
+
+    // ✅ correct max 5 check
+    if (addresses.length >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum 5 addresses allowed"
+      });
+    }
+
+    addresses.push(updateaddress);
+
+    await user.update({ updateaddress: addresses });
+
+    res.status(200).json({
+      success: true,
+      message: "Address added successfully",
+      data: addresses
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const verifyOtpController = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    const user = await userModel.findOne({ where: { phone } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.json({ message: "User already verified" });
+    }
+
+    // ❌ wrong OTP
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // ❌ expired OTP
+    if (new Date() > user.otpExpiry) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    // ✅ verify
+    await user.update({
+      isVerified: true,
+      otp: null,
+      otpExpiry: null
+    });
+
+    res.json({
+      success: true,
+      message: "OTP verified successfully"
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const resendOtpController = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    const user = await userModel.findOne({ where: { phone } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const otp = generateOTP();
+
+    await user.update({
+      otp,
+      otpExpiry: new Date(Date.now() + 5 * 60 * 1000)
+    });
+
+    console.log("Resend OTP:", otp); // DEV
+
+    res.json({
+      success: true,
+      message: "OTP resent successfully",
+      otp // dev only
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 module.exports = {
   registerController,
   loginController,
   logoutController,
+addAddressController,
+verifyOtpController,
+resendOtpController 
 };

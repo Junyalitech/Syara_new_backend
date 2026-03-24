@@ -44,6 +44,59 @@ const categoryController = {
 
 
     },
+
+    addCategoryType: async (req, res) => {
+        try {
+            const { name, description, type, status, discount } = req.body;
+
+            // Basic validation
+            if (!name || !type) {
+                return res.status(400).json({ success: false, message: 'Name and type are required' });
+            }
+
+            const validTypes = ['Vegetable', 'Fruit'];
+            if (!validTypes.includes(type)) {
+                return res.status(400).json({ success: false, message: "Type must be 'Vegetable' or 'Fruit'" });
+            }
+
+            // Validate discount (dynamic upto 30%)
+            let discountValue = 0;
+            if (discount !== undefined) {
+                if (isNaN(discount) || discount < 0 || discount > 30) {
+                    return res.status(400).json({ success: false, message: 'Discount must be between 0 and 30' });
+                }
+                discountValue = discount;
+            }
+
+            // Handle image upload
+            let image = null;
+            if (req.file) {
+                image = req.file.filename;
+            }
+
+            const slug = slugify(name, { lower: true });
+
+            const newCategory = await Category.create({
+                name,
+                description: description || null,
+                type,
+                status: status !== undefined ? status : true,
+                discount: discountValue,
+                image,
+                slug
+            });
+
+            res.status(201).json({
+                success: true,
+                message: 'Category added successfully',
+                data: newCategory
+            });
+
+        } catch (err) {
+            console.error('Error adding category:', err.message);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    },
     updateCategory: async (req, res) => {
         try {
             const { name, description } = req.body;

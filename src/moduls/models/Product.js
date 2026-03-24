@@ -113,9 +113,29 @@ const Product = sequelize.define('Product', {
     defaultValue: false // Default value if not specified
   },
   status: {
-        type: DataTypes.ENUM('Pending', 'Shipped', 'Delivered', 'Canceled'), // You can adjust these statuses as needed
-        default: 'Pending', // Default status can be set to 'Pending'
-    },
+    type: DataTypes.ENUM('Pending', 'Shipped', 'Delivered', 'Canceled'), // You can adjust these statuses as needed
+    default: 'Pending', // Default status can be set to 'Pending'
+  },
+
+  oldPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: true
+  },
+  stock: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  rating: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0
+  },
+  review: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
 }, {
   tableName: 'products',
   timestamps: false

@@ -15,8 +15,10 @@ const productController = {
       const {
         productName, categoryId, price, nickname1, nickname2, nickname3, restriction, type,
         packeoption1kg, packeoption500gm, packeoption1kgrate, packeoption500gmrate,
-        description, video, recipe, productNamealsoyoumaylike, link,newLaunch,OurComOffer
+        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, stock, rating, review, oldPrice
       } = req.body;
+
+
 
       if (!productName || !categoryId || !price) {
         return res.status(400).json({ success: false, message: "Required fields are missing." });
@@ -34,6 +36,10 @@ const productController = {
         slug,
         categoryId,
         price,
+        oldPrice,
+        stock,
+        rating,
+        review,
         description,
         nickname1,
         nickname2,
@@ -113,7 +119,7 @@ const productController = {
       const {
         productName, categorySlug, price, nickname1, nickname2, nickname3, restriction, type,
         packeoption1kg, packeoption500gm, packeoption1kgrate, packeoption500gmrate,
-        description, video, recipe, productNamealsoyoumaylike, link,newLaunch, OurComOffer 
+        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, oldPrice, stock, rating, review,
       } = req.body;
 
       const product = await Product.findOne({ where: { slug } });
@@ -135,6 +141,10 @@ const productController = {
         slug: productName ? slugify(productName, { lower: true }) : product.slug,
         categoryId,
         price,
+        oldPrice,
+        stock,
+        rating,
+        review,
         description,
         nickname1,
         nickname2,
@@ -150,7 +160,7 @@ const productController = {
         restriction,
         type,
         newLaunch,
-        OurComOffer 
+        OurComOffer
       };
 
       if (req.files) {
@@ -228,8 +238,30 @@ const productController = {
       console.error('Error fetching new launches:', error);
       res.status(500).json({ message: 'Error fetching new launches', error });
     }
-  }
-   
+  },
+  getTopRatedProducts: async (req, res) => {
+    try {
+      const products = await Product.findAll({
+        order: [['rating', 'DESC']], // highest rating first
+        limit: 5 // sirf 5 products
+      });
+
+      res.status(200).json({
+        success: true,
+        data: products
+      });
+
+    } catch (error) {
+      console.error("Error fetching top rated products:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching top rated products"
+      });
+    }
+  },
+
 };
+
+
 
 module.exports = productController;
