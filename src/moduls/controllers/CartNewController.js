@@ -457,6 +457,8 @@ exports.updateCart = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
 exports.deleteProductFromCart = async (req, res) => {
     const userId = req.params.userId; // Get userId from URL parameters
     const productId = Number(req.params.productId); // Convert productId to a number

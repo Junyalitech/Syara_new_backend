@@ -24,6 +24,12 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     // allowNull: false,
   },
+
+  updateaddress: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+  },
   role: {
     type: DataTypes.ENUM, // Use ENUM for clear role definition
     values: ['customer', 'merchant'], // Define possible values for role

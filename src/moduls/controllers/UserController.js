@@ -10,7 +10,7 @@ const registerController = async (req, res) => {
   try {
     const { name, email, password, phone, address, role, } = req.body;
 
-    if (!name || !email || !password || !phone  || !role) {
+    if (!name || !email || !password || !phone || !role) {
       return res.status(400).send({ error: "All fields are required" });
     }
 
@@ -43,7 +43,7 @@ const registerController = async (req, res) => {
       otpExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 min
       isVerified: false
     });
-     console.log("User OTP:", otp);
+    console.log("User OTP:", otp);
     return res.status(201).send({
       success: true,
       message: "User registered successfully",
@@ -127,7 +127,7 @@ const logoutController = (req, res) => {
 
 const addAddressController = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.id;
     const { updateaddress } = req.body;
 
     // ✅ correct validation
@@ -137,9 +137,15 @@ const addAddressController = async (req, res) => {
 
     const user = await userModel.findByPk(userId);
 
+
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    console.log("Before:", user.toJSON());
+
+    console.log("Incoming:", updateaddress);
 
     let addresses = user.updateaddress || [];
 
@@ -151,9 +157,20 @@ const addAddressController = async (req, res) => {
       });
     }
 
-    addresses.push(updateaddress);
+    addresses.push({
+      id: Date.now().toString(), // ✅ ADD THIS
+      ...updateaddress
+    });
 
-    await user.update({ updateaddress: addresses });
+    console.log("Saving:", addresses);
+
+    await userModel.update(
+      { updateaddress: addresses },
+      { where: { id: userId } }
+    );
+
+    const updatedUser = await userModel.findByPk(userId);
+    console.log("Saved DB value:", updatedUser.updateaddress);
 
     res.status(200).json({
       success: true,
@@ -237,11 +254,97 @@ const resendOtpController = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+const fetchProfileController = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await userModel.findByPk(req.params.id, {
+      attributes: { exclude: ['password', 'otp', 'otpExpiry'] }
+    });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const editProfileController = async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+    const user = await userModel.findByPk(req.params.id);
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    await user.update({ name, email, phone, address });
+
+    res.json({ success: true, message: "Profile updated successfully", data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+const changePasswordController = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await userModel.findByPk(req.params.id);
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const isMatch = await comparePassword(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ success: false, message: "Old password is incorrect" });
+
+    const hashed = await hashPassword(newPassword);
+    await user.update({ password: hashed });
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+const fetchAllAddressesController = async (req, res) => {
+  try {
+    const user = await userModel.findByPk(req.params.id);
+    console.log("User :", user); // DEV
+    console.log("User addresses:", user.updateaddress); // DEV
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.json({ success: true, addresses: user.updateaddress || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+const deleteAddressController = async (req, res) => {
+  try {
+    const { index } = req.body;
+    const user = await userModel.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    let addresses = user.updateaddress || [];
+    if (!addresses[index]) return res.status(400).json({ success: false, message: "Address not found" });
+
+    addresses.splice(index, 1);
+    await user.update({ updateaddress: addresses });
+    
+
+    res.json({ success: true, message: "Address deleted", addresses });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 module.exports = {
   registerController,
   loginController,
   logoutController,
-addAddressController,
-verifyOtpController,
-resendOtpController 
+  addAddressController,
+  verifyOtpController,
+  fetchProfileController,
+  editProfileController,
+  changePasswordController,
+  fetchAllAddressesController,
+  deleteAddressController,
+  resendOtpController
 };
