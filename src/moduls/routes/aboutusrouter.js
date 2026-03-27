@@ -3,6 +3,7 @@ const router = express.Router();
 const upload = require('../image-file/index'); // Assuming this is a configured multer instance
 const imageController = require('../controllers/aboutuse');
 const contactController=require('../controllers/ContactusController');
+const { addFaqController, updateFaqController, deleteFaqController, getAllFaqController } = require('../controllers/faqController');
 router.post('/our-mission', upload.single('image'), imageController.createOurMission);
 router.get('/our-mission/api', imageController.getOurMission);
 
@@ -32,7 +33,11 @@ router.get('/create-our-team/api', imageController.getAllTeamMembers);
 router.post('/create-why-syara-retails', upload.array('images', 10), imageController.createWhySyaraRetails);
 router.get('/create-why-syara-retails/api', imageController.getWhySyaraRetils);
 
+router.post('/add-faq', addFaqController);
+// router.get('/new-fetch-all-faqs', getAllFaqController);
 
+router.put('/update-faq/:id', updateFaqController);
+router.delete('/delete-faq/:id', deleteFaqController);
 // start our blogs section
 router.post('/our-blogs', upload.single('image'), imageController.createBlogs);
 router.get('/our-blogs/api', imageController.getAllBogs);

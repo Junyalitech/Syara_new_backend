@@ -16,13 +16,25 @@ const DeliveryOption=require('../models/trsanportation')
 exports.uploadImage = async (req, res) => {
   try {
     // const { id } = req.body;
+       const { title, subtitle, description, button } = req.body;
+
+
     const imagePath = req.file ? req.file.filename : null; // Handle image file path
 
     if (!imagePath) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const newImage = await Image.create({ image: imagePath });
+  
+
+ const newImage = await Image.create({
+      image: imagePath,
+      title,
+      subtitle,
+      description,
+      button
+    });
+
 
     res.status(201).json({ message: 'Image uploaded successfully', image: newImage });
   } catch (error) {

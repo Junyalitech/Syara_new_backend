@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../image-file/index');
 const imageController = require('../controllers/uploadController');
+const { getAllFaqController } = require('../controllers/faqController');
 
 router.post('/upload', upload.single('image'), imageController.uploadImage);
 router.get('/upload', imageController.getImages);
@@ -32,6 +33,7 @@ router.delete('/testimonial/:id',imageController.delete_textimonial)
 //befaltu k ourcombooofer h eski ab need nhi h ye puaran wala h 
 
 
+router.get('/new-fetch-all-faqs', getAllFaqController);
 
 //create routes for sayara news
 router.post('/syara-news', upload.single('image'), imageController.createSayaraNews);

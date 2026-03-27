@@ -11,6 +11,23 @@ const Image = sequelize.define('Image', {
   image: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+ 
+  title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  subtitle: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  button: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'text3', // specify the table name here

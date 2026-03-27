@@ -25,7 +25,7 @@ const categoryController = {
         }
     },
     createCategory: async (req, res) => {
-       
+
 
         try {
             const { name, description } = req.body;
@@ -100,33 +100,33 @@ const categoryController = {
     updateCategory: async (req, res) => {
         try {
             const { name, description } = req.body;
-    
+
             // Log incoming slug for debugging
             console.log('Incoming slug:', req.params.slug);
-    
+
             // Find the category by the old slug (using req.params.slug)
             const category = await Category.findOne({ where: { slug: req.params.slug } });
-            
+
             if (!category) {
                 console.error('Category not found for slug:', req.params.slug);
                 return res.status(404).json({ success: false, message: 'Category not found' });
             }
-    
+
             // Generate a new slug from the updated name
             const newSlug = slugify(name, { lower: true });
-    
+
             // Handle the image file if it exists
             let image = category.image; // Keep the old image by default
             if (req.file) {
                 image = req.file.filename; // Replace with the new uploaded image
             }
-    
+
             // Update the category (including the slug and image)
             await Category.update(
-                { name, description, slug: newSlug, image }, 
+                { name, description, slug: newSlug, image },
                 { where: { slug: req.params.slug } } // Keep searching by the old slug
             );
-    
+
             // Fetch the updated category to return in the response
             const updatedCategory = await Category.findOne({ where: { slug: newSlug } });
             res.status(200).json({ success: true, data: updatedCategory, message: 'Category updated successfully' });
@@ -165,21 +165,50 @@ const categoryController = {
 
     // Search controller
     searchItems: async (req, res) => {
-        const { search } = req.query; // Get the search query from URL parameters
+        const { search } = req.query;
+
         try {
-            // Perform case-insensitive search using LIKE operator
-            const items = await Category.findAll({
+            if (!search) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Search query is required"
+                });
+            }
+
+            const categories = await Category.findAll({
                 where: {
                     name: {
-                        [Op.like]: `%${search}%` // Search for names containing the search term
+                        [Op.like]: `%${search}%`
                     }
                 }
             });
-            res.json(items); // Return the matched categories
+
+            const products = await Product.findAll({
+                where: {
+                    productName: {
+                        [Op.like]: `%${search}%`
+                    }
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    categories,
+                    products
+                }
+            });
+
         } catch (error) {
-            console.error('Error occurred:', error); // Log error for debugging
-            res.status(500).json({ message: 'Server error', error }); // Send error response
+            console.error(error);
+            res.status(500).json({
+                success: false,
+                message: "Server error",
+                error: error.message
+            });
         }
     }
 };
+
+
 module.exports = categoryController;
