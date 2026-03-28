@@ -55,6 +55,8 @@ const editPaymentMethod = async (req, res) => {
       );
     }
 
+    
+    console.log("Updating payment method with data:", { type, details, isDefault }); // DEV
     await payment.update({ type, details, isDefault: !!isDefault });
 
     res.json({

@@ -8,6 +8,11 @@ router.post('/upload', upload.single('image'), imageController.uploadImage);
 router.get('/upload', imageController.getImages);
 
 
+
+router.post('/createTwobanner', upload.single('image'), imageController.createTwoBanner);
+router.get('/gettwoBanner', imageController.getTwoBanner);
+
+
 router.delete('/upload/:id',imageController. delete_user);
 // create routes for newlaunch 
 //ye puaaa newlaunch tha jiski need nhi h ab humko beflatu k ye esko remove krna h 

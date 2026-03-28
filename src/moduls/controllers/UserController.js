@@ -318,19 +318,50 @@ const fetchAllAddressesController = async (req, res) => {
 const deleteAddressController = async (req, res) => {
   try {
     const { index } = req.body;
-    const user = await userModel.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    const userId = req.params.id;
 
-    let addresses = user.updateaddress || [];
-    if (!addresses[index]) return res.status(400).json({ success: false, message: "Address not found" });
+    const user = await userModel.findByPk(userId);
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // ✅ Proper way to get JSON field
+    let addresses = [...(user.getDataValue("updateaddress") || [])];
+
+    console.log("Before deletion:", addresses);
+
+    if (index < 0 || index >= addresses.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
+    console.log("Deleting:", addresses[index]);
+
+    // ✅ Remove address
     addresses.splice(index, 1);
-    await user.update({ updateaddress: addresses });
-    
 
-    res.json({ success: true, message: "Address deleted", addresses });
+    // ✅ Force update
+    user.setDataValue("updateaddress", addresses);
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Address deleted",
+      addresses,
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 

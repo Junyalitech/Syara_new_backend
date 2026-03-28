@@ -12,7 +12,8 @@ const Testimonial = require('../models/Testimonial')
 const SayarNews = require('../models/SayaraNews')
 
 const User = require('../models/login');
-const DeliveryOption=require('../models/trsanportation')
+const DeliveryOption=require('../models/trsanportation');
+const TwoBanner = require('../models/twoBanner');
 exports.uploadImage = async (req, res) => {
   try {
     // const { id } = req.body;
@@ -77,7 +78,45 @@ exports.delete_user = async (req, res) => {
   }
 };
 
- 
+exports.createTwoBanner = async (req, res) => {
+  try {
+    // const { id } = req.body;
+       const { title, subtitle, description, button } = req.body;
+
+
+    const imagePath = req.file ? req.file.filename : null; // Handle image file path
+
+    if (!imagePath) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+  
+
+ const banner = await TwoBanner.create({
+      image: imagePath,
+      title,
+      subtitle,
+      description,
+      button
+    });
+
+
+    res.status(201).json({ message: 'Image uploaded successfully', banner: banner });
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    res.status(500).json({ message: 'Failed to upload image', error: error.message });
+  }
+};
+
+exports.getTwoBanner = async (req, res) => {
+  try {
+    const banner = await TwoBanner.findAll();
+    res.status(200).json(banner);
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    res.status(500).json({ message: 'Failed to fetch images', error: error.message });
+  }
+};
 // Create a whychooseus with image
 exports.createWhyChooseUs = async (req, res) => {
   try {
