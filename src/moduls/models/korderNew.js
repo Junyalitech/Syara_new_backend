@@ -1,0 +1,65 @@
+const { DataTypes } = require("sequelize");
+const sequelize = require("../../db/dbConnection");
+const OrderItem = require("./korderItems");
+
+const Order = sequelize.define("Order", {
+  orderId: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+
+  orderStatus: {
+    type: DataTypes.ENUM(
+      "processing",
+      "confirmed",
+      "shipped",
+      "delivered",
+      "cancelled"
+    ),
+    defaultValue: "processing",
+  },
+
+  subtotal: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+
+  grandTotal: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+
+  transportationCost: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
+  },
+
+  paymentType: {
+    type: DataTypes.ENUM("Online", "COD"),
+    allowNull: false,
+  },
+
+  paymentStatus: {
+    type: DataTypes.ENUM("Pending", "Paid", "Failed"),
+    defaultValue: "Pending",
+  },
+
+  razorpayOrderId: {
+    type: DataTypes.STRING,
+  },
+
+}, {
+  tableName: "orders",
+  timestamps: true,
+});
+
+Order.hasMany(OrderItem, { foreignKey: "orderId" });
+OrderItem.belongsTo(Order, { foreignKey: "orderId" });
+
+module.exports = Order;

@@ -255,7 +255,7 @@ const Order = sequelize.define('Order', {
     type: DataTypes.ENUM('Free', 'NCR-porter', 'NCR-courier', 'Out station Land', 'Out station Air')
   },
   paymentType: {
-    type: DataTypes.ENUM('UPI', 'COD')
+    type: DataTypes.ENUM('Online', 'COD')
   },
   paymentStatus: {
     type: DataTypes.ENUM('Pending', 'Paid', 'Failed', 'Refunded')
@@ -279,7 +279,10 @@ const Order = sequelize.define('Order', {
   },
   trackingNumber: {
     type: DataTypes.BIGINT
-  }
+  },
+  razorpayOrderId: {
+  type: DataTypes.STRING
+},
 }, {
   tableName: 'ordersnew',
   timestamps: false
