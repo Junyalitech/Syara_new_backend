@@ -17,6 +17,8 @@ router.put('/api/cart/:cartId',cartController. updateCart);
 router.delete('/remove-product/:userId/:productId',cartController.deleteProductFromCart);
 router.put('/update-quantity/:userId/:productId',cartController. updateProductQuantity);
 
+router.put('/update-cart-inbulk/:userId',cartController.updateCartBulk);
+
 router.post('/api/chcek-pincode-on-cart', cartController.addPincodesOnCart);          // Create a new cart
 
 

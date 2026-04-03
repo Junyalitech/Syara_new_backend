@@ -4,7 +4,7 @@ const User = require('../models/User');
 const Product = require("../models/Product");
 const Transport = require("../models/trsanportation");
 
-class Cart extends Model {}
+class Cart extends Model { }
 
 Cart.init({
     cartId: {
@@ -24,7 +24,9 @@ Cart.init({
             key: 'id',
         },
     },
-
+    // selectedPackage: {
+    //     type: DataTypes.STRING
+    // },
     // ✅ FIX: add onDelete for safety (optional but recommended)
     Product1: {
         type: DataTypes.INTEGER,
@@ -108,6 +110,17 @@ Cart.init({
         onDelete: 'SET NULL'
     },
     Pro_Qty10: { type: DataTypes.INTEGER },
+
+    Product1_package: DataTypes.STRING,
+    Product2_package: DataTypes.STRING,
+    Product3_package: DataTypes.STRING,
+    Product4_package: DataTypes.STRING,
+    Product5_package: DataTypes.STRING,
+    Product6_package: DataTypes.STRING,
+    Product7_package: DataTypes.STRING,
+    Product8_package: DataTypes.STRING,
+    Product9_package: DataTypes.STRING,
+    Product10_package: DataTypes.STRING,
 
     subtotal: { type: DataTypes.FLOAT, allowNull: false },
     discount_name: { type: DataTypes.STRING(255) },

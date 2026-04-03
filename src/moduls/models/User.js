@@ -24,7 +24,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     // allowNull: false,
   },
-
+pincode:{
+  type: DataTypes.STRING,
+},
   updateaddress: {
     type: DataTypes.JSON,
     allowNull: true,

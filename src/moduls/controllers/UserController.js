@@ -8,7 +8,7 @@ const generateOTP = () => {
 // Register Controller
 const registerController = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role, } = req.body;
+    const { name, email, password, phone, address, role,pincode } = req.body;
 
     if (!name || !email || !password || !phone || !role) {
       return res.status(400).send({ error: "All fields are required" });
@@ -36,6 +36,7 @@ const registerController = async (req, res) => {
       name,
       email,
       phone,
+      pincode,
       address: address || 'NA', // Make address optional
       password: hashedPassword,
       role, // Save the role
@@ -102,6 +103,7 @@ const loginController = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+pincode:user.pincode,
         address: user.address,
         id: user.id,
         role: user.role, // Include user role in the response

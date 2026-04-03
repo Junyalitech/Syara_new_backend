@@ -83,97 +83,98 @@ const Order = require("../models/korderNew");
 const OrderItem = require("../models/korderItems");
 
 const createOrder = async (req, res) => {
-  try {
-    const { userId, products, paymentType } = req.body;
+    try {
+        const { userId, products, paymentType , totalAmount, deliveryCharge} = req.body;
 
-    // ✅ Validation
-    if (!userId || !products || products.length === 0) {
-      return res.status(400).json({ message: "Invalid order data" });
+        // ✅ Validation
+        if (!userId || !products || products.length === 0) {
+            return res.status(400).json({ message: "Invalid order data" });
+        }
+
+        // ✅ Calculate total
+        let subtotal = 0;
+
+        products.forEach((item) => {
+            subtotal += item.price * item.quantity;
+        });
+
+        // 🔥 USE FRONTEND VALUES
+        const deliveryFee = deliveryCharge || 0;
+        const grandTotal = totalAmount;
+
+        let razorpayOrder = null;
+
+        // 🔵 ONLINE PAYMENT
+        if (paymentType === "Online") {
+            razorpayOrder = await razorpay.orders.create({
+                amount: Math.round(grandTotal * 100), // paise
+                currency: "INR",
+                receipt: "receipt_" + Date.now(),
+            });
+        }
+
+        // ✅ CREATE ORDER
+        const order = await Order.create({
+            userId,
+            subtotal,
+            grandTotal,
+            transportationCost: deliveryFee,
+            paymentType,
+            paymentStatus: "Pending",
+            razorpayOrderId: razorpayOrder?.id || null,
+        });
+
+        // ✅ CREATE ORDER ITEMS
+        const orderItems = products.map((item) => ({
+            orderId: order.orderId,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+        }));
+
+        await OrderItem.bulkCreate(orderItems);
+
+        // 🧹 CLEAR CART (optional)
+        await Cart.destroy({ where: { userId } });
+
+        // 🟢 RESPONSE
+        if (paymentType === "Online") {
+            return res.status(200).json({
+                message: "Order created, proceed to payment",
+                order,
+                razorpayOrder,
+            });
+        }
+
+        res.status(201).json({
+            message: "Order placed successfully (COD)",
+            order,
+        });
+
+    } catch (error) {
+        console.error("Create Order Error:", error);
+        res.status(500).json({
+            message: "Internal server error",
+            error: error.message,
+        });
     }
-
-    // ✅ Calculate total
-    let subtotal = 0;
-
-    products.forEach((item) => {
-      subtotal += item.price * item.quantity;
-    });
-
-    const deliveryFee = 0; // FREE
-    const grandTotal = subtotal + deliveryFee;
-
-    let razorpayOrder = null;
-
-    // 🔵 ONLINE PAYMENT
-    if (paymentType === "Online") {
-      razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(grandTotal * 100), // paise
-        currency: "INR",
-        receipt: "receipt_" + Date.now(),
-      });
-    }
-
-    // ✅ CREATE ORDER
-    const order = await Order.create({
-      userId,
-      subtotal,
-      grandTotal,
-      transportationCost: deliveryFee,
-      paymentType,
-      paymentStatus: "Pending",
-      razorpayOrderId: razorpayOrder?.id || null,
-    });
-
-    // ✅ CREATE ORDER ITEMS
-    const orderItems = products.map((item) => ({
-      orderId: order.orderId,
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    await OrderItem.bulkCreate(orderItems);
-
-    // 🧹 CLEAR CART (optional)
-    await Cart.destroy({ where: { userId } });
-
-    // 🟢 RESPONSE
-    if (paymentType === "Online") {
-      return res.status(200).json({
-        message: "Order created, proceed to payment",
-        order,
-        razorpayOrder,
-      });
-    }
-
-    res.status(201).json({
-      message: "Order placed successfully (COD)",
-      order,
-    });
-
-  } catch (error) {
-    console.error("Create Order Error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
 };
 
 
 const verifyPayment = async (req, res) => {
-  try {
-    const { orderId } = req.body;
+    try {
+        const { orderId } = req.body;
 
-    await Order.update(
-      { paymentStatus: "Paid" },
-      { where: { orderId } }
-    );
+        await Order.update(
+            { paymentStatus: "Paid" },
+            { where: { orderId } }
+        );
 
-    res.json({ message: "Payment successful" });
+        res.json({ message: "Payment successful" });
 
-  } catch (error) {
-    res.status(500).json({ message: "Payment verification failed" });
-  }
+    } catch (error) {
+        res.status(500).json({ message: "Payment verification failed" });
+    }
 };
 
 const getUserOrders = async (req, res) => {

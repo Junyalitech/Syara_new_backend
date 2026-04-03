@@ -2,7 +2,7 @@ const Cart = require('../models/CartNew'); // Adjust if this is a default export
 const User = require('../models/User'); // Ensure User model is correctly set up
 const Product = require('../models/Product'); // Make sure to import the Product model
 const { Sequelize } = require('sequelize');
-const Transport=require("../models/trsanportation")
+const Transport = require("../models/trsanportation")
 exports.createCart = async (req, res) => {
     try {
         const {
@@ -13,6 +13,7 @@ exports.createCart = async (req, res) => {
             payment_status,
             Shipping_street,
             Shipping_city,
+            // selectedPackage,
             Shipping_pincode,
             Shipping_state,
             Shipping_country,
@@ -24,16 +25,16 @@ exports.createCart = async (req, res) => {
             Transportation_total_cost,
             Transportation_Type,
             // Include product IDs and quantities
-            Product1, Pro_Qty1,
-            Product2, Pro_Qty2,
-            Product3, Pro_Qty3,
-            Product4, Pro_Qty4,
-            Product5, Pro_Qty5,
-            Product6, Pro_Qty6,
-            Product7, Pro_Qty7,
-            Product8, Pro_Qty8,
-            Product9, Pro_Qty9,
-            Product10, Pro_Qty10,
+            Product1, Pro_Qty1, Product1_package,
+            Product2, Pro_Qty2, Product2_package,
+            Product3, Pro_Qty3, Product3_package,
+            Product4, Pro_Qty4, Product4_package,
+            Product5, Pro_Qty5, Product5_package,
+            Product6, Pro_Qty6, Product6_package,
+            Product7, Pro_Qty7, Product7_package,
+            Product8, Pro_Qty8, Product8_package,
+            Product9, Pro_Qty9, Product9_package,
+            Product10, Pro_Qty10, Product10_package,
         } = req.body;
 
         // Check if the user exists
@@ -44,16 +45,16 @@ exports.createCart = async (req, res) => {
 
         // Create an array to hold the product IDs and quantities
         const productEntries = [
-            { id: Product1, qty: Pro_Qty1 },
-            { id: Product2, qty: Pro_Qty2 },
-            { id: Product3, qty: Pro_Qty3 },
-            { id: Product4, qty: Pro_Qty4 },
-            { id: Product5, qty: Pro_Qty5 },
-            { id: Product6, qty: Pro_Qty6 },
-            { id: Product7, qty: Pro_Qty7 },
-            { id: Product8, qty: Pro_Qty8 },
-            { id: Product9, qty: Pro_Qty9 },
-            { id: Product10, qty: Pro_Qty10 },
+            { id: Product1, qty: Pro_Qty1, package: Product1_package },
+            { id: Product2, qty: Pro_Qty2, package: Product2_package },
+            { id: Product3, qty: Pro_Qty3, package: Product3_package },
+            { id: Product4, qty: Pro_Qty4, package: Product4_package },
+            { id: Product5, qty: Pro_Qty5, package: Product5_package },
+            { id: Product6, qty: Pro_Qty6, package: Product6_package },
+            { id: Product7, qty: Pro_Qty7, package: Product7_package },
+            { id: Product8, qty: Pro_Qty8, package: Product8_package },
+            { id: Product9, qty: Pro_Qty9, package: Product9_package },
+            { id: Product10, qty: Pro_Qty10, package: Product10_package },
         ];
 
         // Filter out null or undefined products
@@ -68,8 +69,8 @@ exports.createCart = async (req, res) => {
         }
 
 
-         // Check if any product quantity exceeds 10
-         for (const { qty } of validProducts) {
+        // Check if any product quantity exceeds 10
+        for (const { qty } of validProducts) {
             if (qty > 10) {
                 return res.status(400).json({ message: 'You cannot add more than 10 quantity for any product.' });
             }
@@ -88,27 +89,38 @@ exports.createCart = async (req, res) => {
         if (cart) {
             // Update the existing cart
             cart.subtotal += subtotal; // Adjust subtotal if needed
-            cart.Product1=Product1;
-            cart.Product2=Product2;
-            cart.Product3=Product3;
-            cart.Product4=Product4;
-            cart.Product5=Product5;
-            cart.Product6=Product6;
-            cart.Product7=Product7;
-            cart.Product8=Product8;
-            cart.Product9=Product9;
-            cart.Product10=Product10;
-            cart.Pro_Qty1=Pro_Qty1;
-            cart.Pro_Qty2=Pro_Qty2;
-            cart.Pro_Qty3=Pro_Qty3;
-            cart.Pro_Qty4=Pro_Qty4;
-            cart.Pro_Qty5=Pro_Qty5;
-            cart.Pro_Qty6=Pro_Qty6;
-            cart.Pro_Qty7=Pro_Qty7;
-            cart.Pro_Qty8=Pro_Qty8;
-            cart.Pro_Qty9=Pro_Qty9;
-            cart.Pro_Qty10=Pro_Qty10;
+            cart.Product1 = Product1;
+            cart.Product2 = Product2;
+            cart.Product3 = Product3;
+            cart.Product4 = Product4;
+            cart.Product5 = Product5;
+            cart.Product6 = Product6;
+            cart.Product7 = Product7;
+            cart.Product8 = Product8;
+            cart.Product9 = Product9;
+            cart.Product10 = Product10;
+            cart.Pro_Qty1 = Pro_Qty1;
+            cart.Pro_Qty2 = Pro_Qty2;
+            cart.Pro_Qty3 = Pro_Qty3;
+            cart.Pro_Qty4 = Pro_Qty4;
+            cart.Pro_Qty5 = Pro_Qty5;
+            cart.Pro_Qty6 = Pro_Qty6;
+            cart.Pro_Qty7 = Pro_Qty7;
+            cart.Pro_Qty8 = Pro_Qty8;
+            cart.Pro_Qty9 = Pro_Qty9;
+            cart.Pro_Qty10 = Pro_Qty10;
+            cart.Product1_package = Product1_package;
+            cart.Product2_package = Product2_package;
+            cart.Product3_package = Product3_package;
+            cart.Product4_package = Product4_package;
+            cart.Product5_package = Product5_package;
+            cart.Product6_package = Product6_package;
+            cart.Product7_package = Product7_package;
+            cart.Product8_package = Product8_package;
+            cart.Product9_package = Product9_package;
+            cart.Product10_package = Product10_package;
             cart.discount_name = discount_name;
+            // cart.selectedPackage = selectedPackage;
             cart.discount_amount = discount_amount;
             cart.payment_status = payment_status;
             cart.Shipping_street = Shipping_street;
@@ -130,12 +142,12 @@ exports.createCart = async (req, res) => {
             }
 
             // Update the products in the cart
-            validProducts.forEach(({ id, qty }) => {
+            validProducts.forEach(({ id, qty, package }) => {
                 const existingProduct = cart.products.find(product => product.id === id);
                 if (existingProduct) {
                     existingProduct.qty += qty; // Update quantity if exists
                 } else {
-                    cart.products.push({ id, qty }); // Add new product
+                    cart.products.push({ id, qty, package }); // Add new product
                 }
             });
 
@@ -153,6 +165,7 @@ exports.createCart = async (req, res) => {
                 payment_status,
                 Shipping_street,
                 Shipping_city,
+                // selectedPackage,
                 Shipping_pincode,
                 Shipping_state,
                 Shipping_country,
@@ -209,7 +222,7 @@ exports.deleteProduct1FromCart = async (req, res) => {
 exports.insertProductAtPosition = async (req, res) => {
     try {
         const { cartId, position } = req.params; // Extract cartId and position from URL
-        const { productId, quantity } = req.body; // Product details to be inserted
+        const { productId, quantity, package } = req.body; // Product details to be inserted
 
         // Validate the position
         if (position < 1 || position > 10) {
@@ -222,20 +235,43 @@ exports.insertProductAtPosition = async (req, res) => {
             return res.status(404).json({ message: 'Cart not found' });
         }
 
+        for (let i = 1; i <= 10; i++) {
+            if (cart[`Product${i}`] === productId) {
+                // ✅ Product already exists → update quantity
+                cart[`Pro_Qty${i}`] += quantity;
+
+                // ✅ Optional: package update (if needed)
+                cart[`Product${i}_package`] = package;
+
+                await cart.save();
+
+                return res.status(200).json({
+                    message: 'Product quantity updated (already exists)',
+                    cart
+                });
+            }
+        }
+
         // Check if there's enough room to add a new product
         if (cart[`Product10`] !== null) {
             return res.status(400).json({ message: 'Cart is full, cannot insert a new product.' });
         }
 
+
+
         // Shift products down from the specified position to make space for the new product
         for (let i = 10; i > position; i--) {
             cart[`Product${i}`] = cart[`Product${i - 1}`];
             cart[`Pro_Qty${i}`] = cart[`Pro_Qty${i - 1}`];
+            cart[`Product${i}_package`] = cart[`Product${i - 1}_package`]; // ✅ NEW
         }
+
+
 
         // Insert the new product at the specified position
         cart[`Product${position}`] = productId;
         cart[`Pro_Qty${position}`] = quantity;
+        cart[`Product${position}_package`] = package; // ✅ NEW
 
         // Save the changes to the database
         await cart.save();
@@ -283,45 +319,15 @@ exports.updateProductAtPosition = async (req, res) => {
 };
 exports.getUserCart = async (req, res) => {
     const userId = req.params.userId;
-  
+
     // Check if userId is provided
     if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
+        return res.status(400).json({ message: 'User ID is required' });
     }
-  
-    try {
-      // Fetch cart items for the given userId
-      const cartItems = await Cart.findAll({
-        where: { userId },
-        include: [
-          {
-            model: User,
-            attributes: ['name'],
-          },
-          {
-            model: Product,
-            attributes: ['productName', 'price', 'image1'],
-          },
-        ],
-      });
-  
-      if (!cartItems.length) {
-        return res.status(404).json({ message: 'No items found in your cart' });
-      }
-  
-      res.status(200).json(cartItems); // Send cart items as response
-    } catch (err) {
-      console.error('Error fetching cart items:', err); // Log error for debugging
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-  };
 
-  // Controller to get cart with product details
-  exports.getCartWithProducts = async (req, res) => {
     try {
-        const userId = req.params.userId; // Assuming you'll pass userId as a parameter
-        // Fetch the cart items for the given userId
-        const carts = await Cart.findAll({
+        // Fetch cart items for the given userId
+        const cartItems = await Cart.findAll({
             where: { userId },
             include: [
                 {
@@ -335,6 +341,38 @@ exports.getUserCart = async (req, res) => {
             ],
         });
 
+        if (!cartItems.length) {
+            return res.status(404).json({ message: 'No items found in your cart' });
+        }
+
+
+
+        res.status(200).json(cartItems); // Send cart items as response
+    } catch (err) {
+        console.error('Error fetching cart items:', err); // Log error for debugging
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+// Controller to get cart with product details
+exports.getCartWithProducts = async (req, res) => {
+    try {
+        const userId = req.params.userId; // Assuming you'll pass userId as a parameter
+        // Fetch the cart items for the given userId
+        const carts = await Cart.findAll({
+            where: { userId },
+            include: [
+                {
+                    model: User,
+                    attributes: ['name'],
+                },
+                {
+                    model: Product,
+                    attributes: ['productName', 'price', 'image1', 'packeoption1kgrate', 'packeoption500gmrate'],
+                },
+            ],
+        });
+
         const productIds = [];
         carts.forEach(cart => {
             for (let i = 1; i <= 10; i++) {
@@ -342,6 +380,8 @@ exports.getUserCart = async (req, res) => {
                 if (cart[`Product${i}`]) productIds.push(cart[`Product${i}`]);
             }
         });
+
+        
 
         // Ensure productIds is not empty before making a query
         let productDetails = [];
@@ -366,9 +406,12 @@ exports.getUserCart = async (req, res) => {
                         products.push({
                             productId: cart[`Product${i}`],
                             quantity: cart[`Pro_Qty${i}`],
+                            package: cart[`Product${i}_package`] || null, // ✅ ADD THIS
                             productName: productDetail.productName,
                             price: productDetail.price,
                             image: productDetail.image1,
+                            Pack1kgprice: productDetail.packeoption1kgrate,
+                            Pack500gprice: productDetail.packeoption500gmrate
                         });
                     }
                 }
@@ -389,11 +432,15 @@ exports.getUserCart = async (req, res) => {
             };
         });
 
+
+
         return res.status(200).json(cartData);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error', error });
     }
+
+
 };
 // Update Order function
 
@@ -402,7 +449,7 @@ exports.getUserCart = async (req, res) => {
 
 exports.updateCart = async (req, res) => {
     // Retrieve cartId from route parameters
-    const { cartId } = req.params; 
+    const { cartId } = req.params;
     const cartIdInt = parseInt(cartId, 10); // Parse cartId to integer
 
     // Check if cartId is valid
@@ -449,7 +496,7 @@ exports.updateCart = async (req, res) => {
 
         // Fetch the updated cart to send back in response
         const updatedCart = await Cart.findOne({ where: { cartId: cartIdInt } });
-        
+
         // Respond with the updated cart
         res.status(200).json(updatedCart);
     } catch (error) {
@@ -630,9 +677,9 @@ exports.addPincodesOnCart = async (req, res) => {
 
                 // Update the cart with product details
                 await Cart.update(
-                    { 
-                        [productFieldName]: product.productId, 
-                        [quantityFieldName]: 1 
+                    {
+                        [productFieldName]: product.productId,
+                        [quantityFieldName]: 1
                     },
                     { where: { cartId: cart.cartId } }
                 );
@@ -647,9 +694,9 @@ exports.addPincodesOnCart = async (req, res) => {
 
         // Update the cart with the final values, including Shipping_pincode
         await Cart.update(
-            { 
-                subtotal, 
-                Transportation_total_cost: transportCost, 
+            {
+                subtotal,
+                Transportation_total_cost: transportCost,
                 Grand_Total: grandTotal, // Update the grand total
                 type: cartType,
                 Shipping_pincode: pincode // Update the Shipping_pincode field
@@ -667,8 +714,119 @@ exports.addPincodesOnCart = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
     }
 };
+exports.getDeliveryOptions = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const pincode = user.pincode;
+
+
+        const transport = await Transport.findOne({
+            where: { pincode }
+        });
+
+        if (!transport) {
+            return res.json({
+                success: false,
+                message: "Delivery not available for your pincode "
+            });
+        }
+
+
+        const cart = await Cart.findOne({ where: { userId } });
+
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+
+        const subtotal = cart.subtotal || 0;
+
+
+        let options = [];
+
+        if (transport.free_delivery_available) {
+            options.push({
+                type: "FREE_HOME_DELIVERY",
+                charge: 0,
+                total: subtotal
+            });
+        }
+
+        if (transport.porter_available) {
+            options.push({
+                type: "PORTER",
+                charge: transport.porter_charge,
+                total: subtotal + transport.porter_charge
+            });
+        }
+
+        if (transport.courier_available) {
+            options.push({
+                type: "COURIER_BY_AIR",
+                charge: transport.courier_air_charge,
+                total: subtotal + transport.courier_air_charge
+            });
+
+            options.push({
+                type: "COURIER_BY_ROAD",
+                charge: transport.courier_road_charge,
+                total: subtotal + transport.courier_road_charge
+            });
+        }
+
+        return res.json({
+            success: true,
+            pincode,
+            subtotal,
+            delivery_options: options
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+exports.updateCartBulk = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { items } = req.body;
 
 
 
+        // Check if the user exists
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
+        // Find the user's cart
+        const cart = await Cart.findOne({ where: { userId } });
 
+        if (!cart) {
+            return res.status(404).json({ message: 'Cart not found' });
+        }
+
+        items.forEach((item, index) => {
+            const i = index + 1;
+
+            cart[`Product${i}`] = item.productId;
+            cart[`Pro_Qty${i}`] = item.quantity;
+            cart[`Product${i}_package`] = item.package;
+        });
+
+        await cart.save();
+
+        res.json({ message: "Cart updated successfully", cart });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
