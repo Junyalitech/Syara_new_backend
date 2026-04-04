@@ -11,11 +11,5 @@ router.post('/contact-info', contactInfoController.createOrReplaceContactInfo);
 // Route to get the latest contact info
 router.get('/contact-info/api', contactInfoController.getContactInfo);
 
-router.post("/add-pincode", addPincode);
-router.put("/update-pincode/:pincode", updatePincode);
-router.delete("/delete-pincode/:pincode", deletePincode);
-router.get("/get-pincodes", getAllPincodes);
-router.get("/delivery/:pincode", getDeliveryByPincode);
-router.post("/verify-pincode", verifyPincode);
 
 module.exports = router;

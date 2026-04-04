@@ -7,6 +7,7 @@ const imageRoutes = require('./moduls/routes/image');
 const categoryRoutes = require('./moduls/routes/CategoryRoutes');
 const userRoutes = require('./moduls/routes/UserRoutes');
 const allroutes = require('./moduls/routes/allroutes');
+const pinCodeRoutes = require('./moduls/routes/pincoderouter');
 // ye hamri server file h 
 const ordernew = require('./moduls/routes/order');
 const cors = require("cors");
@@ -42,7 +43,9 @@ app.use(imageRoutes);
 app.use(categoryRoutes);
 app.use(userRoutes);
 app.use(allroutes);
+app.use(pinCodeRoutes);
 app.use('/api', ordernew);
+
 
 
 const aboutus = require('./moduls/routes/aboutusrouter');

@@ -8,15 +8,21 @@ exports.addPincode = async (req, res) => {
       pincode,
       free_delivery_available,
       free_delivery_charge,
+      free_delivery_time,
+
       porter_available,
       porter_charge,
+      porter_time,
+
       courier_road_available,
       courier_air_available,
       courier_air_charge,
-      courier_road_charge
+      courier_road_charge,
+      courier_air_time,
+      courier_road_time
     } = req.body;
 
-    
+
     const existing = await Transport.findOne({ where: { pincode } });
 
     if (existing) {
@@ -27,12 +33,17 @@ exports.addPincode = async (req, res) => {
       pincode,
       free_delivery_available,
       free_delivery_charge,
+      free_delivery_time,
+
       porter_available,
       porter_charge,
+      porter_time,
       courier_air_available,
       courier_road_available,
       courier_air_charge,
-      courier_road_charge
+      courier_road_charge,
+      courier_air_time,
+      courier_road_time,
     });
 
     res.status(201).json({ message: "Pincode added successfully", data });
@@ -112,34 +123,38 @@ exports.getDeliveryByPincode = async (req, res) => {
       delivery_options: {
         free_delivery: data.free_delivery_available
           ? {
-              available: true,
-              charge: data.free_delivery_charge
-            }
+            available: true,
+            charge: data.free_delivery_charge,
+            time: data.free_delivery_time
+          }
           : { available: false },
 
         porter: data.porter_available
           ? {
-              available: true,
-              charge: data.porter_charge
-            }
+            available: true,
+            charge: data.porter_charge,
+            time: data.porter_time
+          }
           : { available: false },
 
-          courier_road: data.courier_road_available
+        courier_road: data.courier_road_available
           ? {
-              available: true,
-              charge: data.courier_road_charge
-            }
+            available: true,
+            charge: data.courier_road_charge,
+            time: data.courier_road_time
+          }
           : { available: false },
 
-          courier_air: data.courier_air_available
+        courier_air: data.courier_air_available
           ? {
-              available: true,
-              charge: data.courier_air_charge
-            }
+            available: true,
+            charge: data.courier_air_charge,
+            time: data.courier_air_time
+          }
           : { available: false },
-    
-        
-        
+
+
+
       }
     };
 
@@ -153,6 +168,7 @@ exports.getDeliveryByPincode = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 exports.verifyPincode = async (req, res) => {

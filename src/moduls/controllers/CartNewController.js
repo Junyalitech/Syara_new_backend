@@ -381,7 +381,7 @@ exports.getCartWithProducts = async (req, res) => {
             }
         });
 
-        
+
 
         // Ensure productIds is not empty before making a query
         let productDetails = [];
@@ -799,21 +799,29 @@ exports.updateCartBulk = async (req, res) => {
         const { userId } = req.params;
         const { items } = req.body;
 
-
-
-        // Check if the user exists
+        // 🔹 Validate user
         const user = await User.findOne({ where: { id: userId } });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        // Find the user's cart
-        const cart = await Cart.findOne({ where: { userId } });
+        // 🔹 Get cart
+        let cart = await Cart.findOne({ where: { userId } });
 
         if (!cart) {
-            return res.status(404).json({ message: 'Cart not found' });
+            cart = await Cart.create({ userId });
         }
 
+        // 🧨 STEP 1: CLEAR OLD CART (IMPORTANT)
+        const MAX_ITEMS = 10;
+
+        for (let i = 1; i <= MAX_ITEMS; i++) {
+            cart[`Product${i}`] = null;
+            cart[`Pro_Qty${i}`] = null;
+            cart[`Product${i}_package`] = null;
+        }
+
+        // 🟢 STEP 2: SET NEW ITEMS
         items.forEach((item, index) => {
             const i = index + 1;
 
@@ -824,9 +832,14 @@ exports.updateCartBulk = async (req, res) => {
 
         await cart.save();
 
-        res.json({ message: "Cart updated successfully", cart });
+        res.json({
+            message: "Cart synced successfully ✅",
+            totalItems: items.length,
+            cart,
+        });
 
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 };

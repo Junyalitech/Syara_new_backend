@@ -27,10 +27,16 @@ const OrderItem = sequelize.define("OrderItem", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  package:{
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
 
 }, {
   tableName: "order_items",
   timestamps: true,
 });
+
+
 
 module.exports = OrderItem;

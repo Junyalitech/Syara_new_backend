@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../db/dbConnection");
 const OrderItem = require("./korderItems");
+const Product = require("./product");
 
 const Order = sequelize.define("Order", {
   orderId: {
@@ -53,7 +54,15 @@ const Order = sequelize.define("Order", {
   razorpayOrderId: {
     type: DataTypes.STRING,
   },
-
+  address: {
+    type: DataTypes.TEXT, // or STRING
+    allowNull: true,
+  },
+  // deliveryTime:{
+  //   type: DataTypes.STRING,
+  //   allowNull: true,
+  // }
+  
 }, {
   tableName: "orders",
   timestamps: true,
@@ -61,5 +70,8 @@ const Order = sequelize.define("Order", {
 
 Order.hasMany(OrderItem, { foreignKey: "orderId" });
 OrderItem.belongsTo(Order, { foreignKey: "orderId" });
+
+OrderItem.belongsTo(Product, { foreignKey: "productId" });
+Product.hasMany(OrderItem, { foreignKey: "productId" });
 
 module.exports = Order;

@@ -48,6 +48,21 @@ const Transportation = sequelize.define('Transportation', {
     defaultValue: 0
   },
 
+  free_delivery_time: {
+    type: DataTypes.STRING, // "2-3 days"
+  },
+  
+  porter_time: {
+    type: DataTypes.STRING, // "2-4 hours"
+  },
+  
+  courier_road_time: {
+    type: DataTypes.STRING, // "3-5 days"
+  },
+  
+  courier_air_time: {
+    type: DataTypes.STRING, // "1-2 days"
+  },
 
 }, {
   tableName: 'pincodes',

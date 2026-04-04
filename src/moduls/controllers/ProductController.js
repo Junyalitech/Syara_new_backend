@@ -260,6 +260,31 @@ const productController = {
     }
   },
 
+  updateStockByAdmin : async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { stock } = req.body;
+  
+      const product = await Product.findByPk(productId);
+  
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+  
+      product.stock = stock;
+  
+      await product.save();
+  
+      res.json({
+        message: "Stock updated successfully",
+        product
+      });
+  
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
 };
 
 

@@ -4,6 +4,7 @@ const User2 = require('../controllers/UserController');
 
 const payment = require('../controllers/paymentController');
 const productController = require('../controllers/ProductController');
+const { addPincode, updatePincode, deletePincode, getAllPincodes } = require('../controllers/TransportController');
 //jo main website p ragister kr rha h uske leye ragistration h 
 router.post('/registeruser', User2.registerController);
  
@@ -43,5 +44,8 @@ router.delete('/remove-payment-methods/:id', payment.removePaymentMethod);
 
 
 router.put('/set-default-payment-methods/:id/:cardId', payment.setDefaultPaymentMethod);
+
+
+
 
 module.exports = router;

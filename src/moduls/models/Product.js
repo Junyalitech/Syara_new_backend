@@ -16,6 +16,10 @@ const Product = sequelize.define('Product', {
     type: DataTypes.STRING,
     allowNull: true
   },
+is_liquid: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false
+},
   categoryId: {
     type: DataTypes.INTEGER,
     references: {
