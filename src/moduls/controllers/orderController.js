@@ -19,7 +19,6 @@ const razorpay = new Razorpay({
 
 
 const getShippingCharge = async (pincode, deliveryType) => {
-
   const transport = await Transportation.findOne({
     where: { pincode }
   });
@@ -32,28 +31,40 @@ const getShippingCharge = async (pincode, deliveryType) => {
     if (!transport.free_delivery_available) {
       throw new Error("Free delivery not available");
     }
-    return transport.free_delivery_charge;
+    return {
+      charge: transport.free_delivery_charge,
+      time: transport.free_delivery_time
+    };
   }
 
   if (deliveryType === "porter") {
     if (!transport.porter_available) {
       throw new Error("Porter not available");
     }
-    return transport.porter_charge;
+    return {
+      charge: transport.porter_charge,
+      time: transport.porter_time
+    };
   }
 
   if (deliveryType === "road") {
     if (!transport.courier_road_available) {
       throw new Error("Road delivery not available");
     }
-    return transport.courier_road_charge;
+    return {
+      charge: transport.courier_road_charge,
+      time: transport.courier_road_time
+    };
   }
 
   if (deliveryType === "air") {
     if (!transport.courier_air_available) {
       throw new Error("Air delivery not available");
     }
-    return transport.courier_air_charge;
+    return {
+      charge: transport.courier_air_charge,
+      time: transport.courier_air_time
+    };
   }
 
   throw new Error("Invalid delivery type");
@@ -76,7 +87,7 @@ const createOrder = async (req, res) => {
       address,
       deliveryType,
       subtotal,
-      deliveryTime
+      // deliveryTime
     } = req.body;
 
     console.log("Order Data:", req.body);
@@ -86,13 +97,13 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid order data" });
     }
 
-  
+
     for (let item of products) {
 
       const product = await Product.findOne({
         where: { id: item.productId },
         transaction: t,
-        lock: t.LOCK.UPDATE, 
+        lock: t.LOCK.UPDATE,
       });
 
       if (!product) {
@@ -104,14 +115,36 @@ const createOrder = async (req, res) => {
       }
     }
 
-   
+
     // let subtotal = 0;
     // products.forEach(item => {
     //   subtotal += item.price * item.quantity;
     // });
 
-  
-    const deliveryFee = await getShippingCharge(pincode, deliveryType);
+
+    const deliveryData = await getShippingCharge(pincode, deliveryType);
+
+    const deliveryFee = deliveryData.charge;
+    const deliveryTimeText = deliveryData.time; // "2-3 days"
+
+    const getMaxDeliveryDays = (deliveryTime) => {
+      const match = deliveryTime.match(/\d+/g); // [2, 3]
+      if (!match) return 0;
+
+      return Math.max(...match.map(Number)); // 3
+    };
+
+    const calculateDeliveryDate = (deliveryTime) => {
+      const maxDays = getMaxDeliveryDays(deliveryTime);
+
+      const deliveryDate = new Date();
+      deliveryDate.setDate(deliveryDate.getDate() + maxDays);
+
+      return deliveryDate;
+    };
+
+    // ✅ Calculate final date
+    const finalDeliveryDate = calculateDeliveryDate(deliveryTimeText);
 
     const grandTotal = subtotal + deliveryFee;
 
@@ -126,7 +159,7 @@ const createOrder = async (req, res) => {
       });
     }
 
- 
+
     const order = await Order.create({
       userId,
       subtotal,
@@ -136,25 +169,25 @@ const createOrder = async (req, res) => {
       paymentStatus: "Pending",
       razorpayOrderId: razorpayOrder?.id || null,
       deliveryType,
-      deliveryTime,
+      deliveryTime : finalDeliveryDate.toISOString().split('T')[0], // Store as YYYY-MM-DD
       products,
       address
     }, { transaction: t });
 
     console.log("products:", products);
 
-  
+
     const orderItems = products.map(item => ({
       orderId: order.orderId,
       productId: item.productId,
       quantity: item.quantity,
       price: item.price,
-      package:item.package
+      package: item.package
     }));
 
     await OrderItem.bulkCreate(orderItems, { transaction: t });
 
- 
+
     for (let item of products) {
 
       const product = await Product.findOne({
@@ -170,14 +203,14 @@ const createOrder = async (req, res) => {
 
     await t.commit();
 
-    
+
     if (paymentType === "Online") {
       return res.json({
         success: true,
         message: "Order created, proceed to payment",
         order,
         razorpayOrder,
-        
+
       });
     }
 

@@ -58,10 +58,10 @@ const Order = sequelize.define("Order", {
     type: DataTypes.TEXT, // or STRING
     allowNull: true,
   },
-  // deliveryTime:{
-  //   type: DataTypes.STRING,
-  //   allowNull: true,
-  // }
+  deliveryTime:{
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
   
 }, {
   tableName: "orders",
