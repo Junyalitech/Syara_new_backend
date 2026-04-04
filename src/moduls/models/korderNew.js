@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../db/dbConnection");
 const OrderItem = require("./korderItems");
-const Product = require("./product");
+const Product = require("./Product");
 
 const Order = sequelize.define("Order", {
   orderId: {
