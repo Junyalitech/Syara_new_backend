@@ -15,7 +15,7 @@ const productController = {
       const {
         productName, categoryId, price, nickname1, nickname2, nickname3, restriction, type,
         packeoption1kg, packeoption500gm, packeoption1kgrate, packeoption500gmrate,
-        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, stock, rating, review, oldPrice
+        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, stock, rating, review, oldPrice, is_liquid
       } = req.body;
 
 
@@ -41,6 +41,7 @@ const productController = {
         rating,
         review,
         description,
+        is_liquid,
         nickname1,
         nickname2,
         nickname3,
@@ -260,31 +261,32 @@ const productController = {
     }
   },
 
-  updateStockByAdmin : async (req, res) => {
+  updateStockByAdmin: async (req, res) => {
     try {
       const { productId } = req.params;
       const { stock } = req.body;
-  
+
       const product = await Product.findByPk(productId);
-  
+
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-  
+
       product.stock = stock;
-  
+
       await product.save();
-  
+
       res.json({
         message: "Stock updated successfully",
         product
       });
-  
+
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });
     }
   }
+
 };
 
 

@@ -10,6 +10,7 @@ const Product = require("../models/Product");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { get } = require("http");
+const User = require("../models/User");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -334,6 +335,10 @@ const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
       include: [
+         {
+          model: User,
+          attributes: ["id", "name", "phone"], // 👈 important
+        },
         {
           model: OrderItem,
           include: [Product],
