@@ -5,7 +5,7 @@ const sequelize = require("../../db/dbConnection");
 const Order = require("../models/korderNew");
 const OrderItem = require("../models/korderItems");
 const Transportation = require("../models/Transort");
-const Product = require("../models/product");
+const Product = require("../models/Product");
 
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
