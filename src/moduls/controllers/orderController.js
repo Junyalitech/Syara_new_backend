@@ -2,6 +2,7 @@
 
 const sequelize = require("../../db/dbConnection");
 
+const { Op } = require("sequelize");
 const Order = require("../models/korderNew");
 const OrderItem = require("../models/korderItems");
 const Transportation = require("../models/Transort");
@@ -170,7 +171,7 @@ const createOrder = async (req, res) => {
       paymentStatus: "Pending",
       razorpayOrderId: razorpayOrder?.id || null,
       deliveryType,
-      deliveryTime : finalDeliveryDate.toISOString().split('T')[0], // Store as YYYY-MM-DD
+      deliveryTime: finalDeliveryDate.toISOString().split('T')[0], // Store as YYYY-MM-DD
       products,
       address
     }, { transaction: t });
@@ -289,6 +290,41 @@ const verifyPayment = async (req, res) => {
 };
 
 
+const updateOrderStatusToDelivered = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findByPk(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // ✅ Update status
+    order.paymentStatus = "Paid";
+    order.orderStatus = "delivered";
+    order.deliveryTime = new Date().toISOString();
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Order marked as delivered",
+      order,
+    });
+
+  } catch (error) {
+    console.error("Update Order Status Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 
 
 const getDeliveryOptions = async (req, res) => {
@@ -331,25 +367,55 @@ const getDeliveryOptions = async (req, res) => {
 };
 
 
+
+
+
 const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.findAll({
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || "";
+
+    // ✅ ADD HERE
+    const whereCondition = search
+      ? {
+        [Op.or]: [
+          { "$User.name$": { [Op.like]: `%${search}%` } },
+          { "$User.phone$": { [Op.like]: `%${search}%` } },
+          { id: { [Op.like]: `%${search}%` } },
+        ],
+      }
+      : {};
+
+    const { count, rows: orders } = await Order.findAndCountAll({
+      where: whereCondition, // ✅ APPLY HERE
+      distinct: true, // 🔥 FIX
+      subQuery: false,
+
+
       include: [
-         {
+        {
           model: User,
-          attributes: ["id", "name", "phone"], // 👈 important
+          attributes: ["id", "name", "phone"],
         },
         {
           model: OrderItem,
           include: [Product],
         },
       ],
+
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
     res.json({
       success: true,
-      count: orders.length,
+      totalOrders: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
       orders,
     });
 
@@ -366,20 +432,34 @@ const getOrdersByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const orders = await Order.findAll({
+    // ✅ pagination params
+    const page = parseInt(req.query.page) || 1;
+    const limit = 6;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: orders } = await Order.findAndCountAll({
       where: { userId },
+
+      distinct: true,       // 🔥 IMPORTANT (fix duplicate rows)
+      subQuery: false,      // 🔥 IMPORTANT (fix pagination with include)
+
       include: [
         {
           model: OrderItem,
           include: [Product],
         },
       ],
+
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
     res.json({
       success: true,
-      count: orders.length,
+      totalOrders: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
       orders,
     });
 
@@ -399,5 +479,6 @@ module.exports = {
   verifyPayment,
   getDeliveryOptions,
   getAllOrders,
-  getOrdersByUserId
+  getOrdersByUserId,
+  updateOrderStatusToDelivered
 };

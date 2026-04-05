@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/ordercontrollernew');
-const { createOrder, verifyPayment, getAllOrders, getOrdersByUserId } = require('../controllers/orderController');
+const { createOrder, verifyPayment, getAllOrders, getOrdersByUserId, updateOrderStatusToDelivered } = require('../controllers/orderController');
 
 
 router.post('/createOrder', createOrder);
 router.post('/verifyPayment', verifyPayment);
 router.get("/getorders", getAllOrders); // admin
 router.get("/getorders/:userId", getOrdersByUserId); // user
+router.put("/orders/:orderId/delivered", updateOrderStatusToDelivered);
 // Create a new Order
 router.post('/ordernew/api', orderController.createOrder);
 router.get('/user-orders/:userId',orderController.getUserOrders); // No need for a URL parameter
