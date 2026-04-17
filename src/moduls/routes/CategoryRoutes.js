@@ -44,7 +44,13 @@ router.post('/products/slug', productController.getProductsBySlugs);
 
 //update product routes
 
-router.put('/products/:slug', productController.updateProduct);
+router.put('/products/:slug',upload.fields([
+  { name: 'image1', maxCount: 1 },
+  { name: 'image2', maxCount: 1 },
+  { name: 'image3', maxCount: 1 },
+  { name: 'image4', maxCount: 1 },
+  { name: 'image5', maxCount: 1 }
+]), productController.updateProduct);
 router.get('/products/new-launch', productController.getNewLaunch);
 router.get('/products/our-combo-offer', productController.getOurComboOfer);
 
