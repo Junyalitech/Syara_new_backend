@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const { Op } = require("sequelize");
 const slugify = require('slugify');
 
 const productController = {
@@ -240,16 +241,39 @@ const productController = {
       res.status(500).json({ message: 'Error fetching new launches', error });
     }
   },
+
   getTopRatedProducts: async (req, res) => {
     try {
-      const products = await Product.findAll({
-        order: [['rating', 'DESC']], // highest rating first
-        limit: 5 // sirf 5 products
+      // Step 1: Get products with rating >= 4.5
+      let highRatedProducts = await Product.findAll({
+        where: {
+          rating: {
+            [Op.gte]: 4.5
+          }
+        },
+        order: [['rating', 'DESC']]
       });
+
+      // Step 2: If less than 5, fetch more products
+      if (highRatedProducts.length < 5) {
+        const remainingCount = 5 - highRatedProducts.length;
+
+        const otherProducts = await Product.findAll({
+          where: {
+            id: {
+              [Op.notIn]: highRatedProducts.map(p => p.id)
+            }
+          },
+          order: [['rating', 'DESC']],
+          limit: remainingCount
+        });
+
+        highRatedProducts = [...highRatedProducts, ...otherProducts];
+      }
 
       res.status(200).json({
         success: true,
-        data: products
+        data: highRatedProducts
       });
 
     } catch (error) {
@@ -261,34 +285,34 @@ const productController = {
     }
   },
 
-  updateStockByAdmin: async (req, res) => {
-    try {
-      const { productId } = req.params;
-      const { stock } = req.body;
+    updateStockByAdmin: async (req, res) => {
+      try {
+        const { productId } = req.params;
+        const { stock } = req.body;
 
-      const product = await Product.findByPk(productId);
+        const product = await Product.findByPk(productId);
 
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+
+        product.stock = stock;
+
+        await product.save();
+
+        res.json({
+          message: "Stock updated successfully",
+          product
+        });
+
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
       }
-
-      product.stock = stock;
-
-      await product.save();
-
-      res.json({
-        message: "Stock updated successfully",
-        product
-      });
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
     }
-  }
 
-};
-
+  };
 
 
-module.exports = productController;
+
+  module.exports = productController;
