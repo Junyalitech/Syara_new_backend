@@ -24,9 +24,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     // allowNull: false,
   },
-pincode:{
-  type: DataTypes.STRING,
-},
+  pincode: {
+    type: DataTypes.STRING,
+  },
   updateaddress: {
     type: DataTypes.JSON,
     allowNull: true,
@@ -36,6 +36,20 @@ pincode:{
     type: DataTypes.ENUM, // Use ENUM for clear role definition
     values: ['customer', 'merchant'], // Define possible values for role
     defaultValue: 'customer', // Set default role to customer
+  },
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+
+  otpExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
 }, {
   timestamps: true,

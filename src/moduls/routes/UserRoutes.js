@@ -17,6 +17,7 @@ router.put('/update-address/:id', User2.addAddressController)
 router.post('/logout',User2. logoutController);
 router.post('/verify-otp', User2.verifyOtpController);
 router.post('/resend-otp', User2.resendOtpController);
+router.post('/login-send-otp', User2.loginSendOtpController);
 
 router.get('/profile/:id', User2.fetchProfileController);
 

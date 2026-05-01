@@ -1,6 +1,65 @@
 const { hashPassword, comparePassword } = require('../helpers/authHelper');
 const userModel = require('../models/User');
 const jwt = require('jsonwebtoken');
+// const { sendOTP } = require('../utils/smsHelper');
+const http = require('https');
+
+const SendOTP = (template_id, phone, otp) => {
+  return new Promise((resolve, reject) => {
+
+    const data = JSON.stringify({
+      template_id: template_id,   // from MSG91
+      short_url: "0",
+      recipients: [
+        {
+          mobiles: `91${phone}`,       // user phone number
+          OTP: otp                  // your generated OTP
+        }
+      ]
+    });
+
+    const options = {
+      method: 'POST',
+      hostname: 'control.msg91.com',
+      port: null,
+      path: '/api/v5/flow',
+      headers: {
+        accept: 'application/json',
+        authkey: process.env.SMS_AUTH_KEY,
+        'content-type': 'application/json',
+        'content-length': data.length
+      }
+    };
+
+
+
+    const req = http.request(options, function (res) {
+      let response = '';
+      //   const chunks = [];
+
+      res.on('data', function (chunk) {
+        // chunks.push(chunk);
+        response += chunk.toString();
+      });
+
+      res.on('end', function () {
+        // const body = Buffer.concat(chunks);
+        // console.log(body.toString());
+        resolve(response);
+        console.log(response);
+      });
+
+      req.on('error', (error) => {
+        reject(error);
+        console.error(error);
+      });
+    });
+
+    req.write(data);
+    req.end();
+
+  });
+};
 
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -8,7 +67,7 @@ const generateOTP = () => {
 // Register Controller
 const registerController = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role,pincode } = req.body;
+    const { name, email, password, phone, address, role, pincode } = req.body;
 
     if (!name || !email || !password || !phone || !role) {
       return res.status(400).send({ error: "All fields are required" });
@@ -19,7 +78,7 @@ const registerController = async (req, res) => {
       return res.status(400).send({ error: "Role must be 'customer' or 'merchant'" });
     }
 
-    const existingUser = await userModel.findOne({ where: { email } });
+    const existingUser = await userModel.findOne({ where: { phone } });
 
     if (existingUser) {
       return res.status(409).send({
@@ -32,6 +91,7 @@ const registerController = async (req, res) => {
 
     // ✅ OTP generate
     const otp = generateOTP();
+
     const user = await userModel.create({
       name,
       email,
@@ -44,10 +104,23 @@ const registerController = async (req, res) => {
       otpExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 min
       isVerified: false
     });
+
+    console.log("otp", otp);
+    const template_id = process.env.REG_TEMP_ID; // Get template ID from env
+    //send OTP
+    try {
+      const smsResponse = await SendOTP(template_id, phone, otp);
+      console.log("SMS Response:", smsResponse);
+    } catch (err) {
+      console.error("SMS Error:", err);
+    }
+
+
     console.log("User OTP:", otp);
+
     return res.status(201).send({
       success: true,
-      message: "User registered successfully",
+      message: "User registered successfully.  OTP sent.",
       user,
     });
   } catch (error) {
@@ -59,25 +132,93 @@ const registerController = async (req, res) => {
     });
   }
 };
+
+
+// const verifyOtpController = async (req, res) => {
+//   try {
+//     const { phone, otp } = req.body;
+
+//     if (!phone || !otp) {
+//       return res.status(400).send({
+//         success: false,
+//         message: "Phone and OTP are required",
+//       });
+//     }
+
+//     const user = await userModel.findOne({ where: { phone } });
+
+//     if (!user) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     // ❌ Wrong OTP
+//     if (user.otp !== otp) {
+//       return res.status(400).send({
+//         success: false,
+//         message: "Invalid OTP",
+//       });
+//     }
+
+//     // ❌ Expired OTP
+//     // if (new Date() > new Date(user.otpExpiry)) {
+//     //   return res.status(400).send({
+//     //     success: false,
+//     //     message: "OTP expired",
+//     //   });
+//     // }
+
+//     // ✅ Success → verify user
+//     user.isVerified = true;
+//     user.otp = null;
+//     user.otpExpiry = null;
+
+//     await user.save();
+
+//     return res.status(200).send({
+//       success: true,
+//       message: "OTP verified successfully",
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).send({
+//       success: false,
+//       message: "Error verifying OTP",
+//       error: error.message,
+//     });
+//   }
+// };
 // Login Controller
+
 const loginController = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     // Validation
-    if (!email || !password) {
+    if (!phone || !password) {
       return res.status(400).send({
         success: false,
-        message: "Email and password are required",
+        message: "Phone and password are required",
       });
     }
 
     // Check if user exists
-    const user = await userModel.findOne({ where: { email } });
+    const user = await userModel.findOne({ where: { phone } });
     if (!user) {
       return res.status(404).send({
         success: false,
-        message: "Email is not registered",
+        message: "Phone is not registered",
+      });
+    }
+
+    // 🔥 NEW: Check if user is verified
+    if (!user.isVerified) {
+      return res.status(403).send({
+        success: false,
+        message: "Please verify your account via OTP Login.",
       });
     }
 
@@ -103,7 +244,7 @@ const loginController = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-pincode:user.pincode,
+        pincode: user.pincode,
         address: user.address,
         id: user.id,
         role: user.role, // Include user role in the response
@@ -116,6 +257,66 @@ pincode:user.pincode,
       success: false,
       message: "Error in login",
       error: error.message,
+    });
+  }
+};
+
+// controllers/authController.js
+
+const loginSendOtpController = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).send({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    const user = await userModel.findOne({ where: { phone } });
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // 🔥 Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // ⏳ Expiry (5 min)
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+    // 💾 Save in DB
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // 📲 Send OTP (MSG91 / Twilio)
+
+    console.log("OTP:", otp); // replace with SMS service
+    const template_id = process.env.LOGIN_TEMP_ID; // Get template ID from env
+    //send OTP
+    try {
+      const smsResponse = await SendOTP(template_id, phone, otp);
+      console.log("SMS Response:", smsResponse);
+    } catch (err) {
+      console.error("SMS Error:", err);
+    }
+
+
+    return res.status(200).send({
+      success: true,
+      message: "OTP sent successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Error sending OTP",
     });
   }
 };
@@ -192,12 +393,10 @@ const verifyOtpController = async (req, res) => {
 
     const user = await userModel.findOne({ where: { phone } });
 
+    console.log("user", user);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isVerified) {
-      return res.json({ message: "User already verified" });
     }
 
     // ❌ wrong OTP
@@ -219,7 +418,16 @@ const verifyOtpController = async (req, res) => {
 
     res.json({
       success: true,
-      message: "OTP verified successfully"
+      message: "OTP verified successfully",
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        pincode: user.pincode,
+        address: user.address,
+        id: user.id,
+        role: user.role, // Include user role in the response
+      },
     });
 
   } catch (error) {
@@ -246,6 +454,8 @@ const resendOtpController = async (req, res) => {
 
     console.log("Resend OTP:", otp); // DEV
 
+    
+
     res.json({
       success: true,
       message: "OTP resent successfully",
@@ -256,6 +466,7 @@ const resendOtpController = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 const fetchProfileController = async (req, res) => {
   const { id } = req.params;
   try {
@@ -379,5 +590,6 @@ module.exports = {
   changePasswordController,
   fetchAllAddressesController,
   deleteAddressController,
-  resendOtpController
+  resendOtpController,
+  loginSendOtpController
 };
