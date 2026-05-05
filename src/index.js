@@ -36,7 +36,7 @@ app.use('/public/userImages', express.static(path.join(__dirname, '../public/use
 
 // Use routes
 app.get('/', (req, res) => {
-  res.send('Welcome to the API');
+  res.send('Welcome to the Backend API');
 });
 
 app.use(imageRoutes);

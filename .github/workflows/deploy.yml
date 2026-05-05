@@ -1,0 +1,55 @@
+name: 🚀 Deploy Admin Panel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH Deploy Admin
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "🚀 START ADMIN DEPLOY"
+
+            # 🔥 Load NVM (IMPORTANT)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            node -v
+            npm -v
+
+            cd ~/syara_admin || exit 1
+
+            echo "📥 Pull latest code"
+            git pull origin main
+
+            echo "📦 Install dependencies"
+            npm install
+
+            echo "🏗️ Building project"
+            npm run build
+
+            echo "📁 Checking build folder"
+            ls -la build
+
+            echo "🧹 Clearing old files"
+            rm -rf /var/www/admin/*
+
+            echo "📤 Copy new build"
+            cp -r build/* /var/www/admin/
+
+            echo "📁 Final files in nginx"
+            ls -la /var/www/admin
+
+            echo "🔄 Restart nginx"
+            systemctl restart nginx
+
+            echo "✅ ADMIN DEPLOY DONE"
