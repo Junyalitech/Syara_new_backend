@@ -91,17 +91,44 @@ const productController = {
 
   deleteProduct: async (req, res) => {
     try {
+
       const { id } = req.params;
-      const deleted = await Product.destroy({ where: { id } });
+
+      // First delete related order items
+      await OrderItems.destroy({
+        where: { productId: id }
+      });
+
+      // Then delete product
+      const deleted = await Product.destroy({
+        where: { id }
+      });
 
       if (deleted) {
-        res.status(204).json({ success: true, message: 'Product deleted' });
+
+        res.status(200).json({
+          success: true,
+          message: 'Product and related orders deleted successfully'
+        });
+
       } else {
-        res.status(404).json({ success: false, message: 'Product not found' });
+
+        res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+
       }
+
     } catch (error) {
+
       console.error(`Error deleting product: ${error.message}`);
-      res.status(500).json({ success: false, message: 'Error while deleting product' });
+
+      res.status(500).json({
+        success: false,
+        message: 'Error while deleting product'
+      });
+
     }
   },
 
@@ -285,34 +312,34 @@ const productController = {
     }
   },
 
-    updateStockByAdmin: async (req, res) => {
-      try {
-        const { productId } = req.params;
-        const { stock } = req.body;
+  updateStockByAdmin: async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { stock } = req.body;
 
-        const product = await Product.findByPk(productId);
+      const product = await Product.findByPk(productId);
 
-        if (!product) {
-          return res.status(404).json({ message: "Product not found" });
-        }
-
-        product.stock = stock;
-
-        await product.save();
-
-        res.json({
-          message: "Stock updated successfully",
-          product
-        });
-
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
       }
+
+      product.stock = stock;
+
+      await product.save();
+
+      res.json({
+        message: "Stock updated successfully",
+        product
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
     }
+  }
 
-  };
+};
 
 
 
-  module.exports = productController;
+module.exports = productController;

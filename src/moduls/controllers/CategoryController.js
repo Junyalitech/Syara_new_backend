@@ -12,16 +12,61 @@ const categoryController = {
             res.status(500).json({ error: err.message });
         }
     },
-    getCategoryById: async (req, res) => {
+    deleteCategory: async (req, res) => {
+
         try {
-            const category = await Category.findByPk(req.params.id);
-            if (category) {
-                res.json(category);
+
+            const { id } = req.params;
+
+            // Find all products under category
+            const products = await Product.findAll({
+                where: { categoryId: id }
+            });
+
+            const productIds = products.map(product => product.id);
+
+            // Delete related order items
+            await OrderItems.destroy({
+                where: {
+                    productId: productIds
+                }
+            });
+
+            // Delete products under category
+            await Product.destroy({
+                where: { categoryId: id }
+            });
+
+            // Delete category
+            const deletedCategory = await Category.destroy({
+                where: { id }
+            });
+
+            if (deletedCategory) {
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Category, products, and related orders deleted successfully'
+                });
+
             } else {
-                res.status(404).json({ error: 'Category not found' });
+
+                res.status(404).json({
+                    success: false,
+                    message: 'Category not found'
+                });
+
             }
+
         } catch (err) {
-            res.status(500).json({ error: err.message });
+
+            console.error(err);
+
+            res.status(500).json({
+                success: false,
+                error: err.message
+            });
+
         }
     },
     createCategory: async (req, res) => {
@@ -137,15 +182,48 @@ const categoryController = {
     }
     ,
     deleteCategory: async (req, res) => {
+
         try {
-            const deleted = await Category.destroy({ where: { id: req.params.id } });
-            if (deleted) {
-                res.status(204).json({ message: 'Category deleted' });
+
+            const { id } = req.params;
+
+            // deactivate category
+            const updatedCategory = await Category.update(
+                { status: 'inactive' },
+                { where: { id } }
+            );
+
+            // deactivate related products
+            await Product.update(
+                { status: 'inactive' },
+                { where: { categoryId: id } }
+            );
+
+            if (updatedCategory[0] > 0) {
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Category and related products deactivated successfully'
+                });
+
             } else {
-                res.status(404).json({ error: 'Category not found' });
+
+                res.status(404).json({
+                    success: false,
+                    message: 'Category not found'
+                });
+
             }
+
         } catch (err) {
-            res.status(500).json({ error: err.message });
+
+            console.error(err);
+
+            res.status(500).json({
+                success: false,
+                error: err.message
+            });
+
         }
     },
 
@@ -165,49 +243,79 @@ const categoryController = {
 
     // Search controller
     searchItems: async (req, res) => {
-        const { search } = req.query;
 
-        try {
-            if (!search) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Search query is required"
-                });
-            }
+    const { search } = req.query;
 
-            const categories = await Category.findAll({
-                where: {
-                    name: {
-                        [Op.like]: `%${search}%`
-                    }
-                }
-            });
+    try {
 
-            const products = await Product.findAll({
-                where: {
-                    productName: {
-                        [Op.like]: `%${search}%`
-                    }
-                }
-            });
-
-            return res.status(200).json({
-                success: true,
-                data: {
-                    categories,
-                    products
-                }
-            });
-
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({
+        if (!search) {
+            return res.status(400).json({
                 success: false,
-                message: "Server error",
-                error: error.message
+                message: "Search query is required"
             });
         }
+
+        // Search Categories
+        const categories = await Category.findAll({
+            where: {
+                [Op.or]: [
+                    {
+                        name: {
+                            [Op.like]: `%${search}%`
+                        }
+                    }
+                ]
+            }
+        });
+
+        // Search Products
+        const products = await Product.findAll({
+            where: {
+                [Op.or]: [
+                    {
+                        productName: {
+                            [Op.like]: `%${search}%`
+                        }
+                    },
+                    {
+                        nickname1: {
+                            [Op.like]: `%${search}%`
+                        }
+                    },
+                    {
+                        nickname2: {
+                            [Op.like]: `%${search}%`
+                        }
+                    },
+                    {
+                        nickname3: {
+                            [Op.like]: `%${search}%`
+                        }
+                    }
+                ]
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                categories,
+                products
+            }
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+
     }
+}
 };
 
 
