@@ -2,7 +2,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { Op } = require("sequelize");
 const slugify = require('slugify');
-const OrderItems = require('../models/OrderItems');
+const OrderItems = require('../models/korderItems');
 
 const productController = {
   createProduct: async (req, res) => {
