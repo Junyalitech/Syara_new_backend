@@ -37,7 +37,7 @@ jobs:
             echo "🔄 Restart backend"
 
             # ✅ safer restart (handles both cases)
-            pm2 restart backend || pm2 start src/index.js --name backend
+            pm2 restart syara_server || pm2 start src/index.js --name syara_server
 
             echo "📊 PM2 status"
             pm2 list
