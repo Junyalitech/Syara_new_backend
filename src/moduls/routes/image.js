@@ -11,6 +11,7 @@ router.get('/upload', imageController.getImages);
 
 router.post('/createTwobanner', upload.single('image'), imageController.createTwoBanner);
 router.get('/gettwoBanner', imageController.getTwoBanner);
+router.delete('/deleteTwoBanner/:id', imageController.deleteTwoBanner);
 
 
 router.delete('/upload/:id',imageController. delete_user);

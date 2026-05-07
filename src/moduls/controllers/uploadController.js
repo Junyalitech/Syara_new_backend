@@ -117,6 +117,44 @@ exports.getTwoBanner = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch images', error: error.message });
   }
 };
+
+exports.deleteTwoBanner = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const deleted = await TwoBanner.destroy({
+            where: { id }
+        });
+
+        if (deleted) {
+
+            return res.status(200).json({
+                success: true,
+                message: "Banner deleted successfully"
+            });
+
+        } else {
+
+            return res.status(404).json({
+                success: false,
+                message: "Banner not found"
+            });
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+
+    }
+},
 // Create a whychooseus with image
 exports.createWhyChooseUs = async (req, res) => {
   try {
