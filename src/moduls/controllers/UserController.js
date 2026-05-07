@@ -134,7 +134,15 @@ const registerController = async (req, res) => {
     return res.status(201).send({
       success: true,
       message: "User registered successfully.  OTP sent.",
-      user,
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        pincode: user.pincode,
+        address: user.address,
+        id: user.id,
+        role: user.role, // Include user role in the response
+      },
     });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
