@@ -7,8 +7,6 @@ const { getAllFaqController } = require('../controllers/faqController');
 router.post('/upload', upload.single('image'), imageController.uploadImage);
 router.get('/upload', imageController.getImages);
 
-
-
 router.post('/createTwobanner', upload.single('image'), imageController.createTwoBanner);
 router.get('/gettwoBanner', imageController.getTwoBanner);
 router.delete('/deleteTwoBanner/:id', imageController.deleteTwoBanner);

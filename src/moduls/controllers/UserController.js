@@ -78,12 +78,25 @@ const registerController = async (req, res) => {
       return res.status(400).send({ error: "Role must be 'customer' or 'merchant'" });
     }
 
-    const existingUser = await userModel.findOne({ where: { phone } });
+    const existingPhone = await userModel.findOne({
+      where: { phone }
+    });
 
-    if (existingUser) {
+    if (existingPhone) {
       return res.status(409).send({
         success: false,
-        message: "User already registered. Please log in.",
+        message: "Phone number already registered"
+      });
+    }
+
+    const existingEmail = await userModel.findOne({
+      where: { email }
+    });
+
+    if (existingEmail) {
+      return res.status(409).send({
+        success: false,
+        message: "Email already registered"
       });
     }
 
@@ -124,12 +137,15 @@ const registerController = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error(error);
+    console.error("REGISTER ERROR:", error);
+
     return res.status(500).send({
       success: false,
       message: "Error in registration",
       error: error.message,
+      fullError: error.errors || error
     });
+
   }
 };
 
@@ -454,7 +470,7 @@ const resendOtpController = async (req, res) => {
 
     console.log("Resend OTP:", otp); // DEV
 
-    
+
 
     res.json({
       success: true,

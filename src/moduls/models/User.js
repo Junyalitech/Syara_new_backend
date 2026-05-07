@@ -10,7 +10,7 @@ const User = sequelize.define('User', {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    // unique: true,
   },
   password: {
     type: DataTypes.STRING,
@@ -19,6 +19,7 @@ const User = sequelize.define('User', {
   phone: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
   },
   address: {
     type: DataTypes.STRING,
