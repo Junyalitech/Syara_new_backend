@@ -120,6 +120,7 @@ const createOrder = async (req, res) => {
             grandTotal,
             transportationCost: deliveryFee,
             paymentType,
+            orderStatus : paymentType === "Online" ? "processing" : "confirmed", // Set status based on payment type
             paymentStatus: "Pending",
             razorpayOrderId: razorpayOrder?.id || null,
         });
@@ -166,7 +167,7 @@ const verifyPayment = async (req, res) => {
         const { orderId } = req.body;
 
         await Order.update(
-            { paymentStatus: "Paid" },
+            { paymentStatus: "Paid",orderStatus: "confirmed" },
             { where: { orderId } }
         );
 
@@ -183,9 +184,13 @@ const getUserOrders = async (req, res) => {
     try {
         // Fetching orders based only on userId without including User or Cart models
         const orders = await Order.findAll({
-            where: { userId: userId }, // Fetching orders based on userId
-            // No include for User and Cart
+            where: {
+                userId: userId,
+                orderStatus: "confirmed"
+            },
+            order: [["createdAt", "DESC"]]
         });
+
 
         if (orders.length === 0) {
             return res.status(404).json({ message: 'No orders found for this user' });

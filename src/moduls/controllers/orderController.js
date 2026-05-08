@@ -168,6 +168,7 @@ const createOrder = async (req, res) => {
       grandTotal,
       transportationCost: deliveryFee,
       paymentType,
+      orderStatus: paymentType === "Online" ? "processing" : "confirmed", // Set status based on payment type
       paymentStatus: "Pending",
       razorpayOrderId: razorpayOrder?.id || null,
       deliveryType,
@@ -379,15 +380,17 @@ const getAllOrders = async (req, res) => {
     const search = req.query.search || "";
 
     // ✅ ADD HERE
-    const whereCondition = search
-      ? {
+    const whereCondition = {
+      orderStatus: "Confirmed",
+
+      ...(search && {
         [Op.or]: [
           { "$User.name$": { [Op.like]: `%${search}%` } },
           { "$User.phone$": { [Op.like]: `%${search}%` } },
           { id: { [Op.like]: `%${search}%` } },
         ],
-      }
-      : {};
+      }),
+    };
 
     const { count, rows: orders } = await Order.findAndCountAll({
       where: whereCondition, // ✅ APPLY HERE
@@ -438,7 +441,7 @@ const getOrdersByUserId = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const { count, rows: orders } = await Order.findAndCountAll({
-      where: { userId },
+      where: { userId, orderStatus: "confirmed" },
 
       distinct: true,       // 🔥 IMPORTANT (fix duplicate rows)
       subQuery: false,      // 🔥 IMPORTANT (fix pagination with include)
