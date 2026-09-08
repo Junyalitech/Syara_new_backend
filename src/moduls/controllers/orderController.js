@@ -381,7 +381,7 @@ const getAllOrders = async (req, res) => {
 
     // ✅ ADD HERE
     const whereCondition = {
-      orderStatus: "Confirmed",
+      orderStatus: { [Op.in]: ["Confirmed", "delivered"] },
 
       ...(search && {
         [Op.or]: [
@@ -441,7 +441,7 @@ const getOrdersByUserId = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const { count, rows: orders } = await Order.findAndCountAll({
-      where: { userId, orderStatus: "confirmed" },
+      where: { userId, orderStatus: { [Op.in]: ["confirmed", "delivered"] } },
 
       distinct: true,       // 🔥 IMPORTANT (fix duplicate rows)
       subQuery: false,      // 🔥 IMPORTANT (fix pagination with include)
