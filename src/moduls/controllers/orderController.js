@@ -445,42 +445,42 @@ const verifyPayment = async (req, res) => {
 };
 
 
+// const updateOrderStatusToDelivered = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     const order = await Order.findByPk(orderId);
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // ✅ Update status
+//     order.paymentStatus = "Paid";
+//     order.orderStatus = "delivered";
+//     order.deliveryTime = new Date().toISOString();
+
+//     await order.save();
+
+//     res.json({
+//       success: true,
+//       message: "Order marked as delivered",
+//       order,
+//     });
+
+//   } catch (error) {
+//     console.error("Update Order Status Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
 const updateOrderStatusToDelivered = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const order = await Order.findByPk(orderId);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
-
-    // ✅ Update status
-    order.paymentStatus = "Paid";
-    order.orderStatus = "delivered";
-    order.deliveryTime = new Date().toISOString();
-
-    await order.save();
-
-    res.json({
-      success: true,
-      message: "Order marked as delivered",
-      order,
-    });
-
-  } catch (error) {
-    console.error("Update Order Status Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
-
-const updateOrderStatusToShipped = async (req, res) => {
   try {
 
     const { orderId } = req.params;
@@ -548,6 +548,9 @@ const updateOrderStatusToShipped = async (req, res) => {
         whatsappError
       );
 
+    }
+    finally{
+      console.log("Shipped WhatsApp notification attempt finished.");
     }
 
 
