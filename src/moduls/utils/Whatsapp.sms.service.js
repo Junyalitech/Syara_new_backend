@@ -1,8 +1,11 @@
 const axios = require("axios");
 
 const MSG91_URL =
-  "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/";
+  "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/";
 
+// ==============================
+// ORDER PLACED
+// ==============================
 const sendOrderPlacedWhatsApp = async ({
   phone,
   customerName,
@@ -13,41 +16,58 @@ const sendOrderPlacedWhatsApp = async ({
   try {
     const payload = {
       integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
-      recipient_number: phone,
-      content_type: "template",
-      template: {
-        name: "order_placed_confirmation",
 
-        language: {
-          code: "en",
-          policy: "deterministic",
+      content_type: "template",
+
+      payload: {
+        type: "template",
+
+        template: {
+          name: "order_placed_confirmation",
+
+          language: {
+            code: "en",
+            policy: "deterministic",
+          },
+
+          to_and_components: [
+            {
+              to: [String(phone)],
+
+              components: {
+                body_1: {
+                  type: "text",
+                  value: String(customerName),
+                },
+
+                body_2: {
+                  type: "text",
+                  value: String(orderId),
+                },
+
+                body_3: {
+                  type: "text",
+                  value: String(amount),
+                },
+
+                body_4: {
+                  type: "text",
+                  value: String(deliveryDate),
+                },
+              },
+            },
+          ],
         },
 
-        components: [
-          {
-            type: "body",
-            parameters: [
-              {
-                type: "text",
-                text: String(customerName),
-              },
-              {
-                type: "text",
-                text: String(orderId),
-              },
-              {
-                type: "text",
-                text: String(amount),
-              },
-              {
-                type: "text",
-                text: String(deliveryDate),
-              },
-            ],
-          },
-        ],
+        messaging_product: "whatsapp",
       },
     };
+
+    console.log("Sending Order Placed WhatsApp:", {
+      phone,
+      orderId,
+      template: "order_placed_confirmation",
+    });
 
     const response = await axios.post(MSG91_URL, payload, {
       headers: {
@@ -57,7 +77,10 @@ const sendOrderPlacedWhatsApp = async ({
       },
     });
 
-    console.log("WhatsApp sent:", response.data);
+    console.log(
+      `Order placed WhatsApp sent for ${orderId}:`,
+      response.data
+    );
 
     return {
       success: true,
@@ -65,7 +88,7 @@ const sendOrderPlacedWhatsApp = async ({
     };
   } catch (error) {
     console.error(
-      "WhatsApp send failed:",
+      `Order placed WhatsApp failed for ${orderId}:`,
       error.response?.data || error.message
     );
 
@@ -76,6 +99,10 @@ const sendOrderPlacedWhatsApp = async ({
   }
 };
 
+
+// ==============================
+// ORDER SHIPPED
+// ==============================
 const sendOrderShippedWhatsApp = async ({
   phone,
   customerName,
@@ -84,49 +111,59 @@ const sendOrderShippedWhatsApp = async ({
   try {
     const payload = {
       integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
+
       content_type: "template",
-      recipient_number: phone,
 
-      template: {
-        name: "order_shipped",
+      payload: {
+        type: "template",
 
-        language: {
-          code: "en",
-          policy: "deterministic",
+        template: {
+          name: "order_shipped",
+
+          language: {
+            code: "en",
+            policy: "deterministic",
+          },
+
+          to_and_components: [
+            {
+              to: [String(phone)],
+
+              components: {
+                body_1: {
+                  type: "text",
+                  value: String(customerName),
+                },
+
+                body_2: {
+                  type: "text",
+                  value: String(orderId),
+                },
+              },
+            },
+          ],
         },
 
-        components: [
-          {
-            type: "body",
-            parameters: [
-              {
-                type: "text",
-                text: String(customerName),
-              },
-              {
-                type: "text",
-                text: String(orderId),
-              },
-            ],
-          },
-        ],
+        messaging_product: "whatsapp",
       },
     };
 
-    const response = await axios.post(
-      MSG91_URL,
-      payload,
-      {
-        headers: {
-          accept: "application/json",
-          authkey: process.env.MSG91_WHATSAPP_AuthKey,
-          "content-type": "application/json",
-        },
-      }
-    );
+    console.log("Sending Order Shipped WhatsApp:", {
+      phone,
+      orderId,
+      template: "order_shipped",
+    });
+
+    const response = await axios.post(MSG91_URL, payload, {
+      headers: {
+        accept: "application/json",
+        authkey: process.env.MSG91_WHATSAPP_AuthKey,
+        "content-type": "application/json",
+      },
+    });
 
     console.log(
-      `Order shipped WhatsApp sent for ${orderId}`,
+      `Order shipped WhatsApp sent for ${orderId}:`,
       response.data
     );
 
@@ -134,9 +171,7 @@ const sendOrderShippedWhatsApp = async ({
       success: true,
       data: response.data,
     };
-
   } catch (error) {
-
     console.error(
       `Order shipped WhatsApp failed for ${orderId}:`,
       error.response?.data || error.message
