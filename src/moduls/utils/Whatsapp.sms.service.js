@@ -12,7 +12,7 @@ const sendOrderPlacedWhatsApp = async ({
 }) => {
   try {
     const payload = {
-      integrated_number: process.env.MSG91_WHATSAPP_AuthKey,
+      integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
       recipient_number: phone,
 
       template: {
@@ -52,7 +52,7 @@ const sendOrderPlacedWhatsApp = async ({
     const response = await axios.post(MSG91_URL, payload, {
       headers: {
         accept: "application/json",
-        authkey: process.env.MSG91_AUTH_KEY,
+        authkey: process.env.MSG91_WHATSAPP_AuthKey,
         "content-type": "application/json",
       },
     });
@@ -83,7 +83,7 @@ const sendOrderShippedWhatsApp = async ({
 }) => {
   try {
     const payload = {
-      integrated_number: process.env.MSG91_WHATSAPP_AuthKey,
+      integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
 
       recipient_number: phone,
 
@@ -119,7 +119,7 @@ const sendOrderShippedWhatsApp = async ({
       {
         headers: {
           accept: "application/json",
-          authkey: process.env.MSG91_AUTH_KEY,
+          authkey: process.env.MSG91_WHATSAPP_AuthKey,
           "content-type": "application/json",
         },
       }
