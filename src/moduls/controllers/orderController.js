@@ -496,7 +496,7 @@ const updateOrderStatusToDelivered = async (req, res) => {
 
 
     // Prevent duplicate notification
-    if (order.orderStatus === "shipped") {
+    if (order.orderStatus === "delivered") {
       return res.status(400).json({
         success: false,
         message: "Order is already marked as shipped",
@@ -519,11 +519,11 @@ const updateOrderStatusToDelivered = async (req, res) => {
     // ==============================
 
     try {
-
+      console.log("finding user..........")
       const user = await User.findByPk(order.userId);
-
+      console.log("user fetehed..........")
       if (user?.phone) {
-
+        console.log("whapsapp msg start..........")
         await sendOrderShippedWhatsApp({
           phone: user.phone,
           customerName: user.name,
@@ -547,6 +547,8 @@ const updateOrderStatusToDelivered = async (req, res) => {
         "Shipped WhatsApp notification failed:",
         whatsappError
       );
+
+      console.log(whatsappError)
 
     }
     finally{
