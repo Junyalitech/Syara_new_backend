@@ -12,6 +12,7 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { get } = require("http");
 const User = require("../models/User");
+const { sendOrderPlacedWhatsApp, sendOrderShippedWhatsApp } = require("../utils/Whatsapp.sms.service");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -206,6 +207,45 @@ const createOrder = async (req, res) => {
 
     await t.commit();
 
+    // ===============================
+    // SEND WHATSAPP FOR COD
+    // ===============================
+    if (paymentType === "COD") {
+
+      try {
+
+        const user = await User.findByPk(userId);
+
+        if (user?.phone) {
+
+          await sendOrderPlacedWhatsApp({
+            phone: user.phone,
+            customerName: user.name,
+            orderId: order.orderId,
+            amount: order.grandTotal,
+            deliveryDate: order.deliveryTime,
+          });
+
+        } else {
+
+          console.log(
+            `WhatsApp skipped: phone not found for user ${userId}`
+          );
+
+        }
+
+      } catch (whatsappError) {
+
+        // IMPORTANT:
+        // WhatsApp failure should NOT make the order fail.
+
+        console.error(
+          "COD WhatsApp notification failed:",
+          whatsappError
+        );
+      }
+    }
+
 
     if (paymentType === "Online") {
       return res.json({
@@ -239,41 +279,46 @@ const createOrder = async (req, res) => {
 
 
 const verifyPayment = async (req, res) => {
+
   try {
+
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
     } = req.body;
 
+
+    // ==========================================
+    // VERIFY RAZORPAY SIGNATURE
+    // ==========================================
+
     const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .createHmac(
+        "sha256",
+        process.env.RAZORPAY_KEY_SECRET
+      )
+      .update(
+        razorpay_order_id + "|" + razorpay_payment_id
+      )
       .digest("hex");
 
-    if (generated_signature === razorpay_signature) {
+
+    // ==========================================
+    // INVALID PAYMENT
+    // ==========================================
+
+    if (generated_signature !== razorpay_signature) {
 
       await Order.update(
         {
-          paymentStatus: "Paid",
-          orderStatus: "confirmed",
-          razorpayPaymentId: razorpay_payment_id,
+          paymentStatus: "Failed",
         },
         {
-          where: { razorpayOrderId: razorpay_order_id },
+          where: {
+            razorpayOrderId: razorpay_order_id,
+          },
         }
-      );
-
-      return res.json({
-        success: true,
-        message: "Payment verified",
-      });
-
-    } else {
-
-      await Order.update(
-        { paymentStatus: "Failed" },
-        { where: { razorpayOrderId: razorpay_order_id } }
       );
 
       return res.status(400).json({
@@ -282,11 +327,120 @@ const verifyPayment = async (req, res) => {
       });
     }
 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Verification failed",
+
+    // ==========================================
+    // GET ORDER
+    // ==========================================
+
+    const order = await Order.findOne({
+      where: {
+        razorpayOrderId: razorpay_order_id,
+      },
     });
+
+
+    if (!order) {
+
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+
+    }
+
+
+    // ==========================================
+    // UPDATE PAYMENT
+    // ==========================================
+
+    await order.update({
+
+      paymentStatus: "Paid",
+
+      orderStatus: "confirmed",
+
+      razorpayPaymentId: razorpay_payment_id,
+
+    });
+
+
+    // ==========================================
+    // SEND WHATSAPP
+    // ==========================================
+
+    try {
+
+      const user = await User.findByPk(order.userId);
+
+
+      if (user?.phone) {
+
+        await sendOrderPlacedWhatsApp({
+
+          phone: user.phone,
+
+          customerName: user.name,
+
+          orderId: order.orderId,
+
+          amount: order.grandTotal,
+
+          deliveryDate: order.deliveryTime,
+
+        });
+
+      } else {
+
+        console.log(
+          `WhatsApp skipped: phone not found for user ${order.userId}`
+        );
+
+      }
+
+    } catch (whatsappError) {
+
+      // VERY IMPORTANT
+      // Don't fail the payment response
+      // because MSG91 failed.
+
+      console.error(
+        "Online payment WhatsApp notification failed:",
+        whatsappError
+      );
+
+    }
+
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.json({
+
+      success: true,
+
+      message: "Payment verified",
+
+      orderId: order.orderId,
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "Payment Verification Error:",
+      error
+    );
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: "Verification failed",
+
+    });
+
   }
 };
 
@@ -326,6 +480,100 @@ const updateOrderStatusToDelivered = async (req, res) => {
   }
 };
 
+const updateOrderStatusToShipped = async (req, res) => {
+  try {
+
+    const { orderId } = req.params;
+
+    const order = await Order.findByPk(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+
+    // Prevent duplicate notification
+    if (order.orderStatus === "shipped") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is already marked as shipped",
+      });
+    }
+
+
+    // ==============================
+    // UPDATE ORDER STATUS
+    // ==============================
+    order.paymentStatus = "Paid";
+    order.orderStatus = "delivered";
+    order.deliveryTime = new Date().toISOString();
+
+    await order.save();
+
+
+    // ==============================
+    // SEND WHATSAPP
+    // ==============================
+
+    try {
+
+      const user = await User.findByPk(order.userId);
+
+      if (user?.phone) {
+
+        await sendOrderShippedWhatsApp({
+          phone: user.phone,
+          customerName: user.name,
+          orderId: order.orderId,
+        });
+
+      } else {
+
+        console.log(
+          `WhatsApp skipped: phone not found for user ${order.userId}`
+        );
+
+      }
+
+    } catch (whatsappError) {
+
+      // WhatsApp failure should NOT
+      // make order status update fail.
+
+      console.error(
+        "Shipped WhatsApp notification failed:",
+        whatsappError
+      );
+
+    }
+
+
+    // ==============================
+    // RESPONSE
+    // ==============================
+
+    return res.json({
+      success: true,
+      message: "Order marked as shipped",
+      order,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Update Order Status Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 
 const getDeliveryOptions = async (req, res) => {
