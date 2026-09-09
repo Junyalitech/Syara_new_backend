@@ -14,7 +14,7 @@ const sendOrderPlacedWhatsApp = async ({
     const payload = {
       integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
       recipient_number: phone,
-
+      content_type: "template",
       template: {
         name: "order_placed_confirmation",
 
@@ -84,7 +84,7 @@ const sendOrderShippedWhatsApp = async ({
   try {
     const payload = {
       integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
-
+      content_type: "template",
       recipient_number: phone,
 
       template: {
