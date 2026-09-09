@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const MSG91_URL =
-  "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-template/";
+  "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/";
 
 const sendOrderPlacedWhatsApp = async ({
   phone,
