@@ -184,8 +184,139 @@ const sendOrderShippedWhatsApp = async ({
   }
 };
 
+const sendSpecialSaleOfferWhatsApp = async ({
+  phoneNumbers,
+  discount,
+}) => {
+  try {
+    const payload = {
+      integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
+
+      content_type: "template",
+
+      payload: {
+        type: "template",
+
+        template: {
+          name: "special_sale_offer_without_promocode",
+
+          language: {
+            code: "en",
+            policy: "deterministic",
+          },
+
+          to_and_components: [
+            {
+              to: phoneNumbers,
+
+              components: {
+                body_1: {
+                  type: "text",
+                  value: String(discount),
+                },
+              },
+            },
+          ],
+        },
+
+        messaging_product: "whatsapp",
+      },
+    };
+
+    console.log(
+      `Sending special sale WhatsApp to ${phoneNumbers.length} customers`
+    );
+
+    const response = await axios.post(MSG91_URL, payload, {
+      headers: {
+        accept: "application/json",
+        authkey: process.env.MSG91_WHATSAPP_AuthKey,
+        "content-type": "application/json",
+      },
+    });
+
+    console.log(
+      "Special sale WhatsApp response:",
+      response.data
+    );
+
+    return {
+      success: true,
+      data: response.data,
+    };
+
+  } catch (error) {
+    console.error(
+      "Special sale WhatsApp failed:",
+      error.response?.data || error.message
+    );
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+    };
+  }
+};
+
+
+const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
+  try {
+    const payload = {
+      integrated_number: process.env.MSG91_WHATSAPP_NUMBER,
+
+      content_type: "template",
+
+      payload: {
+        type: "template",
+
+        template: {
+          name: "new_arrivals",
+
+          language: {
+            code: "en",
+            policy: "deterministic",
+          },
+
+          to_and_components: [
+            {
+              to: phoneNumbers,
+            },
+          ],
+        },
+
+        messaging_product: "whatsapp",
+      },
+    };
+
+    const response = await axios.post(MSG91_URL, payload, {
+      headers: {
+        accept: "application/json",
+        authkey: process.env.MSG91_WHATSAPP_AuthKey,
+        "content-type": "application/json",
+      },
+    });
+
+    return {
+      success: true,
+      data: response.data,
+    };
+
+  } catch (error) {
+    console.error(
+      "New arrivals WhatsApp failed:",
+      error.response?.data || error.message
+    );
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+    };
+  }
+};
 
 module.exports = {
   sendOrderPlacedWhatsApp,
   sendOrderShippedWhatsApp,
+  sendSpecialSaleOfferWhatsApp,
+  sendNewArrivalsWhatsApp,
 };
