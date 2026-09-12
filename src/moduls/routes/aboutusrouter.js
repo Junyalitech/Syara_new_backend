@@ -29,6 +29,18 @@ router.get('/director-managing-words/api', imageController.getDirectorManagingWo
 
 router.post('/create-our-team', upload.single('image'), imageController.createTeamMember);
 router.get('/create-our-team/api', imageController.getAllTeamMembers);
+router.put(
+    '/edit-our-team/:id',
+    upload.single('image'),
+    imageController.updateTeamMember
+);
+
+
+// Delete
+router.delete(
+    '/delete-our-team/:id',
+    imageController.deleteTeamMember
+);
 
 router.post('/create-why-syara-retails', upload.array('images', 10), imageController.createWhySyaraRetails);
 router.get('/create-why-syara-retails/api', imageController.getWhySyaraRetils);

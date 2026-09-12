@@ -269,6 +269,92 @@ exports.getAllTeamMembers = async (req, res) => {
     }
 };
 
+exports.updateTeamMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const teamMember = await OurTeam.findByPk(id);
+
+        if (!teamMember) {
+            return res.status(404).json({
+                success: false,
+                message: 'Team member not found'
+            });
+        }
+
+        const {
+            name,
+            position,
+            description,
+            fb_link,
+            insta_link,
+            whatsapp_link
+        } = req.body;
+
+        const updateData = {
+            name,
+            position,
+            description,
+            fb_link,
+            insta_link,
+            whatsapp_link
+        };
+
+        // Only update image if a new image was uploaded
+        if (req.file) {
+            updateData.image = req.file.filename;
+        }
+
+        await teamMember.update(updateData);
+
+        res.status(200).json({
+            success: true,
+            message: 'Team member updated successfully',
+            data: teamMember
+        });
+
+    } catch (error) {
+        console.error('Error updating team member:', error);
+
+        res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
+};
+
+
+// Delete Team Member
+exports.deleteTeamMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const teamMember = await OurTeam.findByPk(id);
+
+        if (!teamMember) {
+            return res.status(404).json({
+                success: false,
+                message: 'Team member not found'
+            });
+        }
+
+        await teamMember.destroy();
+
+        res.status(200).json({
+            success: true,
+            message: 'Team member deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting team member:', error);
+
+        res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
+};
+
 // start Why syara Retails Section
 exports.createWhySyaraRetails = async (req, res) => {
     try {
