@@ -632,9 +632,10 @@ const getAllOrders = async (req, res) => {
 
     const search = req.query.search || "";
 
-    // ✅ ADD HERE
     const whereCondition = {
-      orderStatus: { [Op.in]: ["Confirmed", "delivered"] },
+      orderStatus: {
+        [Op.in]: ["Confirmed", "delivered"],
+      },
 
       ...(search && {
         [Op.or]: [
@@ -646,10 +647,11 @@ const getAllOrders = async (req, res) => {
     };
 
     const { count, rows: orders } = await Order.findAndCountAll({
-      where: whereCondition, // ✅ APPLY HERE
-      distinct: true, // 🔥 FIX
-      subQuery: false,
+      where: whereCondition,
 
+      // Important for pagination with OrderItem hasMany
+      distinct: true,
+      subQuery: true,
 
       include: [
         {
@@ -663,6 +665,7 @@ const getAllOrders = async (req, res) => {
       ],
 
       order: [["createdAt", "DESC"]],
+
       limit,
       offset,
     });
@@ -677,6 +680,7 @@ const getAllOrders = async (req, res) => {
 
   } catch (error) {
     console.error("Get All Orders Error:", error);
+
     res.status(500).json({
       success: false,
       message: "Server error",
