@@ -4,6 +4,22 @@ const { Op } = require("sequelize");
 const slugify = require('slugify');
 const OrderItems = require('../models/korderItems');
 
+const toNumberOrNull = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    value === "null" ||
+    value === "undefined"
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+};
+
 const productController = {
   createProduct: async (req, res) => {
     try {
@@ -106,8 +122,9 @@ const productController = {
 
         packeoption1kg,
         packeoption500gm,
-        packeoption1kgrate,
-        packeoption500gmrate,
+        packeoption1kgrate: toNumberOrNull(packeoption1kgrate),
+        packeoption500gmrate: toNumberOrNull(packeoption500gmrate),
+
 
         video,
         recipe,
@@ -322,7 +339,7 @@ const productController = {
     }
   },
 
-  
+
 
   getNewLaunch: async (req, res) => {
     try {
