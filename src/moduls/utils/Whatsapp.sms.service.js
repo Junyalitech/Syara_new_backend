@@ -205,18 +205,16 @@ const sendSpecialSaleOfferWhatsApp = async ({
             policy: "deterministic",
           },
 
-          to_and_components: [
-            {
-              to: phoneNumbers,
+          to_and_components: phoneNumbers.map((phone) => ({
+            to: [phone],
 
-              components: {
-                body_1: {
-                  type: "text",
-                  value: String(discount),
-                },
+            components: {
+              body_1: {
+                type: "text",
+                value: String(discount),
               },
             },
-          ],
+          })),
         },
 
         messaging_product: "whatsapp",
@@ -277,16 +275,19 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
             policy: "deterministic",
           },
 
-          to_and_components: [
-            {
-              to: phoneNumbers,
-            },
-          ],
+          to_and_components: phoneNumbers.map((phone) => ({
+            to: [phone],
+          })),
         },
 
         messaging_product: "whatsapp",
       },
     };
+
+    console.log(
+      "New Arrivals Payload:",
+      JSON.stringify(payload, null, 2)
+    );
 
     const response = await axios.post(MSG91_URL, payload, {
       headers: {
@@ -295,6 +296,11 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
         "content-type": "application/json",
       },
     });
+
+    console.log(
+      "New arrivals WhatsApp response:",
+      response.data
+    );
 
     return {
       success: true,
@@ -313,7 +319,6 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
     };
   }
 };
-
 module.exports = {
   sendOrderPlacedWhatsApp,
   sendOrderShippedWhatsApp,
