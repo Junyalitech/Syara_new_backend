@@ -206,7 +206,7 @@ const sendSpecialSaleOfferWhatsApp = async ({
           },
 
           to_and_components: phoneNumbers.map((phone) => ({
-            to: [phone],
+            to: [String(phone)],
 
             components: {
               body_1: {

@@ -34,7 +34,7 @@ const sendSpecialSaleOffer = async (req, res) => {
       });
     }
 
-    const BATCH_SIZE = 2;
+    const BATCH_SIZE = 500;
 
     let successfulBatches = 0;
     let failedBatches = 0;
@@ -122,7 +122,7 @@ const sendNewArrivalsCampaign = async (req, res) => {
     // BATCH CONFIG
     // ==============================
 
-    const BATCH_SIZE = 2;
+    const BATCH_SIZE = 500;
 
     let successfulBatches = 0;
     let failedBatches = 0;
