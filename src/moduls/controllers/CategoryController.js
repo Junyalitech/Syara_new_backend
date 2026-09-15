@@ -6,88 +6,100 @@ const Product = require('../models/Product')
 const categoryController = {
     getAllCategories: async (req, res) => {
         try {
-            const categories = await Category.findAll();
-            res.json(categories);
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-    deleteCategory: async (req, res) => {
-
-        try {
-
-            const { id } = req.params;
-
-            // Find all products under category
-            const products = await Product.findAll({
-                where: { categoryId: id }
-            });
-
-            const productIds = products.map(product => product.id);
-
-            // Delete related order items
-            await OrderItems.destroy({
+            const categories = await Category.findAll({
                 where: {
-                    productId: productIds
+                    status: "active"
                 }
             });
 
-            // Delete products under category
-            await Product.destroy({
-                where: { categoryId: id }
-            });
+            res.json(categories);
 
-            // Delete category
-            const deletedCategory = await Category.destroy({
+        } catch (err) {
+            res.status(500).json({
+                error: err.message
+            });
+        }
+    },
+    deleteCategory: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            // Check if category exists
+            const category = await Category.findOne({
                 where: { id }
             });
 
-            if (deletedCategory) {
-
-                res.status(200).json({
-                    success: true,
-                    message: 'Category, products, and related orders deleted successfully'
-                });
-
-            } else {
-
-                res.status(404).json({
+            if (!category) {
+                return res.status(404).json({
                     success: false,
-                    message: 'Category not found'
+                    message: "Category not found"
                 });
-
             }
 
-        } catch (err) {
+            // Deactivate category
+            await Category.update(
+                { status: "deactive" },
+                {
+                    where: { id }
+                }
+            );
 
-            console.error(err);
+            // Deactivate all products under this category
+            await Product.update(
+                { status: "deactive" },
+                {
+                    where: { categoryId: id }
+                }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Category and all products under it deactivated successfully"
+            });
+
+        } catch (err) {
+            console.error("Error deactivating category:", err);
 
             res.status(500).json({
                 success: false,
                 error: err.message
             });
-
         }
     },
     createCategory: async (req, res) => {
-
-
         try {
-            const { name, description } = req.body;
+            const { name, description, status } = req.body;
+
             const slug = slugify(name, { lower: true });
 
             let image = null;
+
             if (req.file) {
-                image = req.file.filename; // Store the image filename
+                image = req.file.filename;
             }
 
-            const category = await Category.create({ name, description, slug, image });
-            res.status(201).json(category);
+            const category = await Category.create({
+                name,
+                description,
+                slug,
+                image,
+                status: status === "deactive" ? "deactive" : "active"
+            });
+
+            res.status(201).json({
+                success: true,
+                data: category,
+                message: "Category created successfully."
+            });
+
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            console.error("Error creating category:", err);
+
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
         }
-
-
     },
 
     addCategoryType: async (req, res) => {
@@ -181,58 +193,18 @@ const categoryController = {
         }
     }
     ,
-    deleteCategory: async (req, res) => {
 
-        try {
-
-            const { id } = req.params;
-
-            // deactivate category
-            const updatedCategory = await Category.update(
-                { status: 'inactive' },
-                { where: { id } }
-            );
-
-            // deactivate related products
-            await Product.update(
-                { status: 'inactive' },
-                { where: { categoryId: id } }
-            );
-
-            if (updatedCategory[0] > 0) {
-
-                res.status(200).json({
-                    success: true,
-                    message: 'Category and related products deactivated successfully'
-                });
-
-            } else {
-
-                res.status(404).json({
-                    success: false,
-                    message: 'Category not found'
-                });
-
-            }
-
-        } catch (err) {
-
-            console.error(err);
-
-            res.status(500).json({
-                success: false,
-                error: err.message
-            });
-
-        }
-    },
 
     getProductsBySlugs: async (req, res) => {
         try {
             const { slugs } = req.body; // Extract slugs from the request body
 
             // Find products where the slug is in the list of slugs
-            const products = await Product.find({ slug: { $in: slugs } });
+            const products = await Product.find({
+                slug: { $in: slugs }, where: {
+                    status: "active"
+                }
+            });
 
             res.status(200).json(products); // Send the products as JSON response
         } catch (error) {
@@ -244,78 +216,84 @@ const categoryController = {
     // Search controller
     searchItems: async (req, res) => {
 
-    const { search } = req.query;
+        const { search } = req.query;
 
-    try {
+        try {
 
-        if (!search) {
-            return res.status(400).json({
-                success: false,
-                message: "Search query is required"
+            if (!search) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Search query is required"
+                });
+            }
+
+            // Search Categories
+            const categories = await Category.findAll({
+                where: {
+                    [Op.or]: [
+                        {
+                            name: {
+                                [Op.like]: `%${search}%`
+                            }
+                        }
+                    ],
+                    where: {
+                        status: "active"
+                    }
+                }
             });
+
+            // Search Products
+            const products = await Product.findAll({
+                where: {
+                    [Op.or]: [
+                        {
+                            productName: {
+                                [Op.like]: `%${search}%`
+                            }
+                        },
+                        {
+                            nickname1: {
+                                [Op.like]: `%${search}%`
+                            }
+                        },
+                        {
+                            nickname2: {
+                                [Op.like]: `%${search}%`
+                            }
+                        },
+                        {
+                            nickname3: {
+                                [Op.like]: `%${search}%`
+                            }
+                        }
+                    ],
+                    where: {
+                        status: "active"
+                    }
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    categories,
+                    products
+                }
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Server error",
+                error: error.message
+            });
+
         }
-
-        // Search Categories
-        const categories = await Category.findAll({
-            where: {
-                [Op.or]: [
-                    {
-                        name: {
-                            [Op.like]: `%${search}%`
-                        }
-                    }
-                ]
-            }
-        });
-
-        // Search Products
-        const products = await Product.findAll({
-            where: {
-                [Op.or]: [
-                    {
-                        productName: {
-                            [Op.like]: `%${search}%`
-                        }
-                    },
-                    {
-                        nickname1: {
-                            [Op.like]: `%${search}%`
-                        }
-                    },
-                    {
-                        nickname2: {
-                            [Op.like]: `%${search}%`
-                        }
-                    },
-                    {
-                        nickname3: {
-                            [Op.like]: `%${search}%`
-                        }
-                    }
-                ]
-            }
-        });
-
-        return res.status(200).json({
-            success: true,
-            data: {
-                categories,
-                products
-            }
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-            error: error.message
-        });
-
     }
-}
 };
 
 
