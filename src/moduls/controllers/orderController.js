@@ -641,17 +641,23 @@ const getAllOrders = async (req, res) => {
         [Op.or]: [
           { "$User.name$": { [Op.like]: `%${search}%` } },
           { "$User.phone$": { [Op.like]: `%${search}%` } },
-          { id: { [Op.like]: `%${search}%` } },
+          { orderId: { [Op.like]: `%${search}%` } },
         ],
       }),
     };
 
-    const { count, rows: orders } = await Order.findAndCountAll({
+    // 1️⃣ Get total unique orders
+    const totalOrders = await Order.count({
       where: whereCondition,
-
-      // Important for pagination with OrderItem hasMany
       distinct: true,
-      subQuery: true,
+      col: "orderId",
+    });
+
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    // 2️⃣ Get orders for current page
+    const orders = await Order.findAll({
+      where: whereCondition,
 
       include: [
         {
@@ -668,12 +674,14 @@ const getAllOrders = async (req, res) => {
 
       limit,
       offset,
+
+      // Don't use subQuery: false
     });
 
     res.json({
       success: true,
-      totalOrders: count,
-      totalPages: Math.ceil(count / limit),
+      totalOrders,
+      totalPages,
       currentPage: page,
       orders,
     });
