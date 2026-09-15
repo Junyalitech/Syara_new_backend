@@ -276,7 +276,9 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
           },
 
           to_and_components: phoneNumbers.map((phone) => ({
-            to: [phone],
+            to: [String(phone)],
+
+            components: {},
           })),
         },
 
@@ -319,6 +321,8 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
     };
   }
 };
+
+
 module.exports = {
   sendOrderPlacedWhatsApp,
   sendOrderShippedWhatsApp,
