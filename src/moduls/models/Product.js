@@ -16,10 +16,10 @@ const Product = sequelize.define('Product', {
     type: DataTypes.STRING,
     allowNull: true
   },
-is_liquid: {
-  type: DataTypes.BOOLEAN,
-  defaultValue: false
-},
+  is_liquid: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   categoryId: {
     type: DataTypes.INTEGER,
     references: {
@@ -139,6 +139,11 @@ is_liquid: {
     type: DataTypes.INTEGER,
     allowNull: true,
     defaultValue: 0
+  },
+  status: {
+    type: DataTypes.ENUM("active", "deactive"),
+    allowNull: false,
+    defaultValue: "active"
   },
 }, {
   tableName: 'products',

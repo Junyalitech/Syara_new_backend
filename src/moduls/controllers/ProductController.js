@@ -5,73 +5,145 @@ const slugify = require('slugify');
 const OrderItems = require('../models/korderItems');
 
 const productController = {
-  createProduct: async (req, res) => {
-    try {
-      console.log("Request Body:", req.body);
-      console.log("Request Files:", req.files);
+ createProduct: async (req, res) => {
+  try {
+    console.log("Request Body:", req.body);
+    console.log("Request Files:", req.files);
 
-      if (!req.files || !req.files.image1 || !req.files.image2 || !req.files.image3 || !req.files.image4 || !req.files.image5) {
-        return res.status(400).json({ success: false, message: "Please upload all five images." });
-      }
-
-      const {
-        productName, categoryId, price, nickname1, nickname2, nickname3, restriction, type,
-        packeoption1kg, packeoption500gm, packeoption1kgrate, packeoption500gmrate,
-        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, stock, rating, review, oldPrice, is_liquid
-      } = req.body;
-
-
-
-      if (!productName || !categoryId || !price) {
-        return res.status(400).json({ success: false, message: "Required fields are missing." });
-      }
-
-      const slug = slugify(productName, { lower: true });
-      const image1 = req.files.image1[0].filename;
-      const image2 = req.files.image2[0].filename;
-      const image3 = req.files.image3[0].filename;
-      const image4 = req.files.image4[0].filename;
-      const image5 = req.files.image5[0].filename;
-
-      const newProduct = await Product.create({
-        productName,
-        slug,
-        categoryId,
-        price,
-        oldPrice,
-        stock,
-        rating,
-        review,
-        description,
-        is_liquid,
-        nickname1,
-        nickname2,
-        nickname3,
-        packeoption1kg,
-        packeoption500gm,
-        packeoption1kgrate,
-        packeoption500gmrate,
-        video,
-        recipe,
-        productNamealsoyoumaylike,
-        link,
-        restriction,
-        type,
-        image1,
-        image2,
-        image3,
-        image4,
-        image5,
-        newLaunch,
-        OurComOffer
+    // At least 1 image is required
+    if (!req.files || !req.files.image1 || req.files.image1.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload at least one image."
       });
-
-      res.status(201).json({ success: true, data: newProduct, message: "Product created successfully." });
-    } catch (error) {
-      console.error("Error processing data:", error.message);
-      res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-  },
+
+    const {
+      productName,
+      categoryId,
+      price,
+      nickname1,
+      nickname2,
+      nickname3,
+      restriction,
+      type,
+      packeoption1kg,
+      packeoption500gm,
+      packeoption1kgrate,
+      packeoption500gmrate,
+      description,
+      video,
+      recipe,
+      productNamealsoyoumaylike,
+      link,
+      newLaunch,
+      OurComOffer,
+      stock,
+      rating,
+      review,
+      oldPrice,
+      is_liquid,
+      status
+    } = req.body;
+
+    if (!productName || !categoryId || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "Required fields are missing."
+      });
+    }
+
+    // Maximum 5 images
+    const imageFields = [
+      "image1",
+      "image2",
+      "image3",
+      "image4",
+      "image5"
+    ];
+
+    const uploadedImages = [];
+
+    imageFields.forEach((field) => {
+      if (req.files[field] && req.files[field].length > 0) {
+        uploadedImages.push(req.files[field][0].filename);
+      }
+    });
+
+    if (uploadedImages.length > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "You can upload a maximum of 5 images."
+      });
+    }
+
+    const slug = slugify(productName, { lower: true });
+
+    const image1 = uploadedImages[0] || null;
+    const image2 = uploadedImages[1] || null;
+    const image3 = uploadedImages[2] || null;
+    const image4 = uploadedImages[3] || null;
+    const image5 = uploadedImages[4] || null;
+
+    const newProduct = await Product.create({
+      productName,
+      slug,
+      categoryId,
+      price,
+      oldPrice,
+      stock,
+
+      // Default rating = 4
+      rating: rating || 4,
+
+      review,
+      description,
+      is_liquid,
+
+      nickname1,
+      nickname2,
+      nickname3,
+
+      packeoption1kg,
+      packeoption500gm,
+      packeoption1kgrate,
+      packeoption500gmrate,
+
+      video,
+      recipe,
+      productNamealsoyoumaylike,
+      link,
+      restriction,
+      type,
+
+      image1,
+      image2,
+      image3,
+      image4,
+      image5,
+
+      newLaunch,
+      OurComOffer,
+
+      // Default status = active
+      status: status || "active"
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: newProduct,
+      message: "Product created successfully."
+    });
+
+  } catch (error) {
+    console.error("Error processing data:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+  }
+},
 
   getProductsByCategorySlug: async (req, res) => {
     try {
