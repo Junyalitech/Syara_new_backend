@@ -5,145 +5,145 @@ const slugify = require('slugify');
 const OrderItems = require('../models/korderItems');
 
 const productController = {
- createProduct: async (req, res) => {
-  try {
-    console.log("Request Body:", req.body);
-    console.log("Request Files:", req.files);
+  createProduct: async (req, res) => {
+    try {
+      console.log("Request Body:", req.body);
+      console.log("Request Files:", req.files);
 
-    // At least 1 image is required
-    if (!req.files || !req.files.image1 || req.files.image1.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload at least one image."
-      });
-    }
-
-    const {
-      productName,
-      categoryId,
-      price,
-      nickname1,
-      nickname2,
-      nickname3,
-      restriction,
-      type,
-      packeoption1kg,
-      packeoption500gm,
-      packeoption1kgrate,
-      packeoption500gmrate,
-      description,
-      video,
-      recipe,
-      productNamealsoyoumaylike,
-      link,
-      newLaunch,
-      OurComOffer,
-      stock,
-      rating,
-      review,
-      oldPrice,
-      is_liquid,
-      status
-    } = req.body;
-
-    if (!productName || !categoryId || !price) {
-      return res.status(400).json({
-        success: false,
-        message: "Required fields are missing."
-      });
-    }
-
-    // Maximum 5 images
-    const imageFields = [
-      "image1",
-      "image2",
-      "image3",
-      "image4",
-      "image5"
-    ];
-
-    const uploadedImages = [];
-
-    imageFields.forEach((field) => {
-      if (req.files[field] && req.files[field].length > 0) {
-        uploadedImages.push(req.files[field][0].filename);
+      // At least 1 image is required
+      if (!req.files || !req.files.image1 || req.files.image1.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please upload at least one image."
+        });
       }
-    });
 
-    if (uploadedImages.length > 5) {
-      return res.status(400).json({
+      const {
+        productName,
+        categoryId,
+        price,
+        nickname1,
+        nickname2,
+        nickname3,
+        restriction,
+        type,
+        packeoption1kg,
+        packeoption500gm,
+        packeoption1kgrate,
+        packeoption500gmrate,
+        description,
+        video,
+        recipe,
+        productNamealsoyoumaylike,
+        link,
+        newLaunch,
+        OurComOffer,
+        stock,
+        rating,
+        review,
+        oldPrice,
+        is_liquid,
+        status
+      } = req.body;
+
+      if (!productName || !categoryId || !price) {
+        return res.status(400).json({
+          success: false,
+          message: "Required fields are missing."
+        });
+      }
+
+      // Maximum 5 images
+      const imageFields = [
+        "image1",
+        "image2",
+        "image3",
+        "image4",
+        "image5"
+      ];
+
+      const uploadedImages = [];
+
+      imageFields.forEach((field) => {
+        if (req.files[field] && req.files[field].length > 0) {
+          uploadedImages.push(req.files[field][0].filename);
+        }
+      });
+
+      if (uploadedImages.length > 5) {
+        return res.status(400).json({
+          success: false,
+          message: "You can upload a maximum of 5 images."
+        });
+      }
+
+      const slug = slugify(productName, { lower: true });
+
+      const image1 = uploadedImages[0] || null;
+      const image2 = uploadedImages[1] || null;
+      const image3 = uploadedImages[2] || null;
+      const image4 = uploadedImages[3] || null;
+      const image5 = uploadedImages[4] || null;
+
+      const newProduct = await Product.create({
+        productName,
+        slug,
+        categoryId,
+        price,
+        oldPrice,
+        stock,
+
+        // Default rating = 4
+        rating: rating || 4,
+
+        review,
+        description,
+        is_liquid,
+
+        nickname1,
+        nickname2,
+        nickname3,
+
+        packeoption1kg,
+        packeoption500gm,
+        packeoption1kgrate,
+        packeoption500gmrate,
+
+        video,
+        recipe,
+        productNamealsoyoumaylike,
+        link,
+        restriction,
+        type,
+
+        image1,
+        image2,
+        image3,
+        image4,
+        image5,
+
+        newLaunch,
+        OurComOffer,
+
+        // Default status = active
+        status: status || "active"
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: newProduct,
+        message: "Product created successfully."
+      });
+
+    } catch (error) {
+      console.error("Error processing data:", error);
+
+      return res.status(500).json({
         success: false,
-        message: "You can upload a maximum of 5 images."
+        message: "Internal Server Error"
       });
     }
-
-    const slug = slugify(productName, { lower: true });
-
-    const image1 = uploadedImages[0] || null;
-    const image2 = uploadedImages[1] || null;
-    const image3 = uploadedImages[2] || null;
-    const image4 = uploadedImages[3] || null;
-    const image5 = uploadedImages[4] || null;
-
-    const newProduct = await Product.create({
-      productName,
-      slug,
-      categoryId,
-      price,
-      oldPrice,
-      stock,
-
-      // Default rating = 4
-      rating: rating || 4,
-
-      review,
-      description,
-      is_liquid,
-
-      nickname1,
-      nickname2,
-      nickname3,
-
-      packeoption1kg,
-      packeoption500gm,
-      packeoption1kgrate,
-      packeoption500gmrate,
-
-      video,
-      recipe,
-      productNamealsoyoumaylike,
-      link,
-      restriction,
-      type,
-
-      image1,
-      image2,
-      image3,
-      image4,
-      image5,
-
-      newLaunch,
-      OurComOffer,
-
-      // Default status = active
-      status: status || "active"
-    });
-
-    return res.status(201).json({
-      success: true,
-      data: newProduct,
-      message: "Product created successfully."
-    });
-
-  } catch (error) {
-    console.error("Error processing data:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error"
-    });
-  }
-},
+  },
 
   getProductsByCategorySlug: async (req, res) => {
     try {
@@ -164,54 +164,60 @@ const productController = {
 
   deleteProduct: async (req, res) => {
     try {
-
       const { id } = req.params;
 
-      // First delete related order items
-      await OrderItems.destroy({
-        where: { productId: id }
-      });
+      // Deactivate product instead of deleting it
+      const [updated] = await Product.update(
+        {
+          status: "deactive"
+        },
+        {
+          where: { id }
+        }
+      );
 
-      // Then delete product
-      const deleted = await Product.destroy({
-        where: { id }
-      });
-
-      if (deleted) {
-
-        res.status(200).json({
+      if (updated) {
+        return res.status(200).json({
           success: true,
-          message: 'Product and related orders deleted successfully'
+          message: "Product deactivated successfully"
         });
-
-      } else {
-
-        res.status(404).json({
-          success: false,
-          message: 'Product not found'
-        });
-
       }
 
-    } catch (error) {
-
-      console.error(`Error deleting product: ${error.message}`);
-
-      res.status(500).json({
+      return res.status(404).json({
         success: false,
-        message: 'Error while deleting product'
+        message: "Product not found"
       });
 
+    } catch (error) {
+      console.error(`Error deactivating product: ${error.message}`);
+
+      return res.status(500).json({
+        success: false,
+        message: "Error while deactivating product"
+      });
     }
   },
 
   getAllProducts: async (req, res) => {
     try {
-      const products = await Product.findAll();
-      res.status(200).json({ success: true, data: products });
+      const products = await Product.findAll({
+        where: {
+          status: "active"
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        data: products
+      });
+
     } catch (error) {
       console.error("Error fetching products:", error);
-      res.status(500).json({ success: false, message: "Error while fetching products" });
+
+      res.status(500).json({
+        success: false,
+        message: "Error while fetching products"
+      });
     }
   },
 
@@ -290,9 +296,10 @@ const productController = {
     try {
       const { slug } = req.params;
       const product = await Product.findOne({
-        where: { slug },
+        where: { slug, status: "active" },
         include: [{ model: Category }]
       });
+
 
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
@@ -308,18 +315,20 @@ const productController = {
   getProductsBySlugs: async (req, res) => {
     try {
       const slugs = req.body.slugs;
-      const products = await Product.findAll({ where: { slug: slugs } });
+      const products = await Product.findAll({ where: { slug: slugs, status: "active" } });
       res.json(products);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   },
 
+  
+
   getNewLaunch: async (req, res) => {
     try {
       console.log('Fetching new launches...');
       const newLaunches = await Product.findAll({
-        where: { newLaunch: true } // Or true
+        where: { newLaunch: true, status: "active" } // Or true
       });
       console.log('New launches found:', newLaunches);
       res.status(200).json(newLaunches);
@@ -332,7 +341,7 @@ const productController = {
     try {
       console.log('Fetching new ourCombooofer...');
       const OurComOffer = await Product.findAll({
-        where: { OurComOffer: true } // Or true
+        where: { OurComOffer: true, status: "active" } // Or true
       });
       console.log('Ourcombooofer found:', OurComOffer);
       res.status(200).json(OurComOffer);
@@ -349,7 +358,8 @@ const productController = {
         where: {
           rating: {
             [Op.gte]: 4.5
-          }
+          },
+          status: "active"
         },
         order: [['rating', 'DESC']]
       });
