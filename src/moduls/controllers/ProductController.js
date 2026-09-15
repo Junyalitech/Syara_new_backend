@@ -106,7 +106,7 @@ const productController = {
         slug,
         categoryId,
         price,
-        oldPrice,
+        oldPrice: toNumberOrNull(oldPrice),
         stock,
 
         // Default rating = 4
