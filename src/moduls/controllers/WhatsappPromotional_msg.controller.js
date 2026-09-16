@@ -1,7 +1,7 @@
 
 const User = require("../models/User");
 const { Op } = require("sequelize");
-const { sendSpecialSaleOfferWhatsApp, sendNewArrivalsWhatsApp } = require("../utils/Whatsapp.sms.service");
+const { sendSpecialSaleOfferWhatsApp, sendNewArrivalsWhatsApp, getWhatsAppLogs } = require("../utils/Whatsapp.sms.service");
 
 const sendSpecialSaleOffer = async (req, res) => {
   try {
@@ -241,7 +241,54 @@ const sendNewArrivalsCampaign = async (req, res) => {
 };
 
 
+const getWhatsAppLogsController = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "startDate and endDate are required",
+      });
+    }
+
+    const result = await getWhatsAppLogs({
+      startDate,
+      endDate,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch WhatsApp logs",
+        error: result.error,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "WhatsApp logs fetched successfully",
+      data: result.data,
+    });
+
+  } catch (error) {
+    console.error(
+      "WhatsApp Logs Controller Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+
+
+
 module.exports = {
   sendNewArrivalsCampaign,
   sendSpecialSaleOffer,
+  getWhatsAppLogsController,
 };

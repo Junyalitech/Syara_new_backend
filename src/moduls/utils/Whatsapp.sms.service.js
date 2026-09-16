@@ -322,10 +322,49 @@ const sendNewArrivalsWhatsApp = async ({ phoneNumbers }) => {
   }
 };
 
+const MSG91_LOGS_URL =
+  "https://control.msg91.com/api/v5/report/logs/wa";
+
+const getWhatsAppLogs = async ({ startDate, endDate }) => {
+  try {
+    const response = await axios.get(MSG91_LOGS_URL, {
+      params: {
+        startDate,
+        endDate,
+      },
+      headers: {
+        accept: "application/json",
+        authkey: process.env.MSG91_WHATSAPP_AuthKey,
+      },
+    });
+
+    console.log(
+      "MSG91 WhatsApp Logs:",
+      JSON.stringify(response.data, null, 2)
+    );
+
+    return {
+      success: true,
+      data: response.data,
+    };
+
+  } catch (error) {
+    console.error(
+      "MSG91 WhatsApp Logs Error:",
+      error.response?.data || error.message
+    );
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+    };
+  }
+};
 
 module.exports = {
   sendOrderPlacedWhatsApp,
   sendOrderShippedWhatsApp,
   sendSpecialSaleOfferWhatsApp,
+  getWhatsAppLogs,
   sendNewArrivalsWhatsApp,
 };
