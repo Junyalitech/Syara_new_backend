@@ -237,9 +237,9 @@ const categoryController = {
                             }
                         }
                     ],
-                    where: {
-                        status: "active"
-                    }
+                    
+                    status: "active"
+                    
                 }
             });
 
@@ -268,9 +268,7 @@ const categoryController = {
                             }
                         }
                     ],
-                    where: {
-                        status: "active"
-                    }
+                    status: "active"
                 }
             });
 
