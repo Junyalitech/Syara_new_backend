@@ -551,7 +551,7 @@ const updateOrderStatusToDelivered = async (req, res) => {
       console.log(whatsappError)
 
     }
-    finally{
+    finally {
       console.log("Shipped WhatsApp notification attempt finished.");
     }
 
@@ -630,7 +630,7 @@ const getAllOrders = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    const search = req.query.search || "";
+    const search = (req.query.search || "").trim();
 
     const whereCondition = {
       orderStatus: {
@@ -639,23 +639,30 @@ const getAllOrders = async (req, res) => {
 
       ...(search && {
         [Op.or]: [
+          { orderId: { [Op.like]: `%${search}%` } },
           { "$User.name$": { [Op.like]: `%${search}%` } },
           { "$User.phone$": { [Op.like]: `%${search}%` } },
-          { orderId: { [Op.like]: `%${search}%` } },
         ],
       }),
     };
 
-    // 1️⃣ Get total unique orders
+    // Total orders
     const totalOrders = await Order.count({
       where: whereCondition,
+      include: [
+        {
+          model: User,
+          attributes: [],
+          required: !!search,
+        },
+      ],
       distinct: true,
       col: "orderId",
     });
 
     const totalPages = Math.ceil(totalOrders / limit);
 
-    // 2️⃣ Get orders for current page
+    // Get orders
     const orders = await Order.findAll({
       where: whereCondition,
 
@@ -663,6 +670,7 @@ const getAllOrders = async (req, res) => {
         {
           model: User,
           attributes: ["id", "name", "phone"],
+          required: !!search,
         },
         {
           model: OrderItem,
@@ -674,8 +682,6 @@ const getAllOrders = async (req, res) => {
 
       limit,
       offset,
-
-      // Don't use subQuery: false
     });
 
     res.json({
