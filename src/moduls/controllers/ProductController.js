@@ -171,7 +171,7 @@ const productController = {
         return res.status(404).json({ success: false, message: 'Category not found' });
       }
 
-      const products = await Product.findAll({ where: { categoryId: category.id } });
+      const products = await Product.findAll({ where: { categoryId: category.id , status: "active" } });
       res.status(200).json({ success: true, category, products });
     } catch (error) {
       console.error("Error while getting products:", error);
