@@ -68,34 +68,34 @@ const categoryController = {
     },
     createCategory: async (req, res) => {
         try {
-            const { name, description, status } = req.body;
+            const { name, description, status, discount, type } = req.body;
 
             const slug = slugify(name, { lower: true });
 
-            let image = null;
-
-            if (req.file) {
-                image = req.file.filename;
-            }
+            const image = req.files?.image?.[0]?.filename || null;
+            const headerImage = req.files?.headerImage?.[0]?.filename || null;
 
             const category = await Category.create({
                 name,
                 description,
                 slug,
                 image,
-                status: status === "deactive" ? "deactive" : "active"
+                headerImage,
+                status: status === 'deactive' ? 'deactive' : 'active',
+                discount: discount ?? 0,
+                type: type || 'Vegetable'
             });
 
-            res.status(201).json({
+            return res.status(201).json({
                 success: true,
                 data: category,
-                message: "Category created successfully."
+                message: 'Category created successfully.'
             });
 
         } catch (err) {
-            console.error("Error creating category:", err);
+            console.error('Error creating category:', err);
 
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: err.message
             });
@@ -156,43 +156,85 @@ const categoryController = {
     },
     updateCategory: async (req, res) => {
         try {
-            const { name, description } = req.body;
+            const { name, description, status, discount, type } = req.body;
 
-            // Log incoming slug for debugging
-            console.log('Incoming slug:', req.params.slug);
-
-            // Find the category by the old slug (using req.params.slug)
-            const category = await Category.findOne({ where: { slug: req.params.slug } });
+            const category = await Category.findOne({
+                where: { slug: req.params.slug }
+            });
 
             if (!category) {
-                console.error('Category not found for slug:', req.params.slug);
-                return res.status(404).json({ success: false, message: 'Category not found' });
+                return res.status(404).json({
+                    success: false,
+                    message: 'Category not found'
+                });
             }
 
-            // Generate a new slug from the updated name
-            const newSlug = slugify(name, { lower: true });
+            const newName = name ?? category.name;
+            const newSlug = slugify(newName, { lower: true });
 
-            // Handle the image file if it exists
-            let image = category.image; // Keep the old image by default
-            if (req.file) {
-                image = req.file.filename; // Replace with the new uploaded image
-            }
+            const image =
+                req.files?.image?.[0]?.filename ?? category.image;
 
-            // Update the category (including the slug and image)
-            await Category.update(
-                { name, description, slug: newSlug, image },
-                { where: { slug: req.params.slug } } // Keep searching by the old slug
-            );
+            const headerImage =
+                req.files?.headerImage?.[0]?.filename ?? category.headerImage;
 
-            // Fetch the updated category to return in the response
-            const updatedCategory = await Category.findOne({ where: { slug: newSlug } });
-            res.status(200).json({ success: true, data: updatedCategory, message: 'Category updated successfully' });
+            await category.update({
+                name: newName,
+                description: description ?? category.description,
+                slug: newSlug,
+                image,
+                headerImage,
+                status: status ?? category.status,
+                discount: discount ?? category.discount,
+                type: type ?? category.type
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: category,
+                message: 'Category updated successfully'
+            });
+
         } catch (err) {
-            console.error('Error updating category:', err.message);
-            res.status(500).json({ success: false, message: err.message });
+            console.error('Error updating category:', err);
+
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
         }
     }
     ,
+    getCategoryBySlug: async (req, res) => {
+        try {
+            const { slug } = req.params;
+
+            const category = await Category.findOne({
+                where: { slug }
+            });
+
+            if (!category) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Category not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: category,
+                message: 'Category fetched successfully'
+            });
+
+        } catch (err) {
+            console.error('Error fetching category:', err);
+
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
 
 
     getProductsBySlugs: async (req, res) => {
@@ -237,9 +279,9 @@ const categoryController = {
                             }
                         }
                     ],
-                    
+
                     status: "active"
-                    
+
                 }
             });
 

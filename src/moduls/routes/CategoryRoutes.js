@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/ProductController');
 const upload = require('../image-file/index');
-const categoryController=require('../controllers/CategoryController')
+const categoryController = require('../controllers/CategoryController')
 
 
 
@@ -13,11 +13,30 @@ router.get('/categories', categoryController.getAllCategories);
 // Get a single category by ID
 // router.get('/:id', categoryController.getCategoryById);
 
-// Create a new category
-router.post('/categories', upload.single('image'),categoryController.createCategory);
+router.post(
+  '/categories',
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'headerImage', maxCount: 1 }
+  ]),
+  categoryController.createCategory
+);
 
-// Update an existing category by ID
-router.put('/categories/:slug',upload.single('image'), categoryController.updateCategory);
+// Update category images and other details
+router.put(
+  '/categories/:slug',
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'headerImage', maxCount: 1 }
+  ]),
+  categoryController.updateCategory
+);
+
+// Get category by slug
+router.get(
+  '/categories/:slug',
+  categoryController.getCategoryBySlug
+);
 
 // Delete a category by ID
 router.delete('/categories/:id', categoryController.deleteCategory);
@@ -44,7 +63,7 @@ router.post('/products/slug', productController.getProductsBySlugs);
 
 //update product routes
 
-router.put('/products/:slug',upload.fields([
+router.put('/products/:slug', upload.fields([
   { name: 'image1', maxCount: 1 },
   { name: 'image2', maxCount: 1 },
   { name: 'image3', maxCount: 1 },
