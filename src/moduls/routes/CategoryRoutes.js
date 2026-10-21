@@ -42,7 +42,10 @@ router.get(
 router.delete('/categories/:id', categoryController.deleteCategory);
 router.get('/search/api', categoryController.searchItems); // Search items by name
 router.post('/add-category-type', upload.single('image'), categoryController.addCategoryType);
-router.put("/update-stock/:productId", productController.updateStockByAdmin);
+router.patch(
+  "/product-variants/:variantId/stock",
+  productController.updateStockByAdmin
+);
 // Route to create a product
 router.post('/products', upload.fields([
   { name: 'image1', maxCount: 1 },

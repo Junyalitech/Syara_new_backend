@@ -1,5 +1,8 @@
 const Product = require('../models/Product');
+const sequelize = require("../../db/dbConnection");
 const Category = require('../models/Category');
+const ProductVariant = require("../models/ProductVariant");
+const { parseVariants } = require("../utils/productVariants");
 const { Op } = require("sequelize");
 const slugify = require('slugify');
 const OrderItems = require('../models/korderItems');
@@ -20,197 +23,424 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(number) ? number : null;
 };
 
+const PRODUCT_FIELDS = [
+  "productName",
+  "description",
+  "nickname1",
+  "nickname2",
+  "nickname3",
+  "video",
+  "recipe",
+  "productNamealsoyoumaylike",
+  "link",
+  "restriction",
+  "type",
+  "is_liquid",
+  "newLaunch",
+  "OurComOffer",
+  "rating",
+  "review",
+  "status",
+];
+
+const IMAGE_FIELDS = [
+  "image1",
+  "image2",
+  "image3",
+  "image4",
+  "image5",
+];
+
+function getUploadedImages(files = {}) {
+  const images = {};
+
+  for (const field of IMAGE_FIELDS) {
+    if (files[field]?.length) {
+      images[field] = files[field][0].filename;
+    }
+  }
+
+  return images;
+}
+
+function getProductFields(body) {
+  const fields = {};
+
+  for (const field of PRODUCT_FIELDS) {
+    if (body[field] !== undefined) {
+      fields[field] = body[field];
+    }
+  }
+
+  if (fields.productName) {
+    fields.slug = slugify(fields.productName, {
+      lower: true,
+      strict: true,
+    });
+  }
+
+  return fields;
+}
+
+const activeVariantsInclude = {
+  model: ProductVariant,
+  as: "variants",
+  where: { status: "active" },
+  required: false,
+};
+
+
 const productController = {
   createProduct: async (req, res) => {
+    let transaction;
+
     try {
-      console.log("Request Body:", req.body);
-      console.log("Request Files:", req.files);
+      const { productName, categoryId } = req.body;
 
-      // At least 1 image is required
-      if (!req.files || !req.files.image1 || req.files.image1.length === 0) {
+      if (!productName || !categoryId) {
         return res.status(400).json({
           success: false,
-          message: "Please upload at least one image."
+          message: "Product name and category are required.",
         });
       }
 
-      const {
-        productName,
-        categoryId,
-        price,
-        nickname1,
-        nickname2,
-        nickname3,
-        restriction,
-        type,
-        packeoption1kg,
-        packeoption500gm,
-        packeoption1kgrate,
-        packeoption500gmrate,
-        description,
-        video,
-        recipe,
-        productNamealsoyoumaylike,
-        link,
-        newLaunch,
-        OurComOffer,
-        stock,
-        rating,
-        review,
-        oldPrice,
-        is_liquid,
-        status
-      } = req.body;
-
-      if (!productName || !categoryId || !price) {
+      // Preserve the existing requirement for image1.
+      if (!req.files?.image1?.length) {
         return res.status(400).json({
           success: false,
-          message: "Required fields are missing."
+          message: "Please upload at least one image.",
         });
       }
 
-      // Maximum 5 images
-      const imageFields = [
-        "image1",
-        "image2",
-        "image3",
-        "image4",
-        "image5"
-      ];
+      const variants = parseVariants(req.body.variants);
 
-      const uploadedImages = [];
+      const category = await Category.findByPk(categoryId);
 
-      imageFields.forEach((field) => {
-        if (req.files[field] && req.files[field].length > 0) {
-          uploadedImages.push(req.files[field][0].filename);
-        }
-      });
-
-      if (uploadedImages.length > 5) {
-        return res.status(400).json({
+      if (!category) {
+        return res.status(404).json({
           success: false,
-          message: "You can upload a maximum of 5 images."
+          message: "Category not found.",
         });
       }
 
-      const slug = slugify(productName, { lower: true });
+      transaction = await sequelize.transaction();
 
-      const image1 = uploadedImages[0] || null;
-      const image2 = uploadedImages[1] || null;
-      const image3 = uploadedImages[2] || null;
-      const image4 = uploadedImages[3] || null;
-      const image5 = uploadedImages[4] || null;
+      const product = await Product.create(
+        {
+          ...getProductFields(req.body),
+          categoryId,
+          ...getUploadedImages(req.files),
+        },
+        { transaction }
+      );
 
-      const newProduct = await Product.create({
-        productName,
-        slug,
-        categoryId,
-        price,
-        oldPrice: toNumberOrNull(oldPrice),
-        stock,
+      await ProductVariant.bulkCreate(
+        variants.map(({ quantity, unit, price, stock, sku }) => ({
+          productId: product.id,
+          quantity,
+          unit,
+          price,
+          stock,
+          sku,
+        })),
+        { transaction }
+      );
 
-        // Default rating = 4
-        rating: rating || 4,
+      await transaction.commit();
 
-        review,
-        description,
-        is_liquid,
-
-        nickname1,
-        nickname2,
-        nickname3,
-
-        packeoption1kg,
-        packeoption500gm,
-        packeoption1kgrate: toNumberOrNull(packeoption1kgrate),
-        packeoption500gmrate: toNumberOrNull(packeoption500gmrate),
-
-
-        video,
-        recipe,
-        productNamealsoyoumaylike,
-        link,
-        restriction,
-        type,
-
-        image1,
-        image2,
-        image3,
-        image4,
-        image5,
-
-        newLaunch,
-        OurComOffer,
-
-        // Default status = active
-        status: status || "active"
+      const createdProduct = await Product.findByPk(product.id, {
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+          },
+        ],
       });
 
       return res.status(201).json({
         success: true,
-        data: newProduct,
-        message: "Product created successfully."
+        data: createdProduct,
+        message: "Product created successfully.",
+      });
+    } catch (error) {
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
+
+      console.error("Create product error:", error);
+
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Failed to create product.",
+      });
+    }
+  },
+
+
+  updateProduct: async (req, res) => {
+    let transaction;
+
+    try {
+      const { slug } = req.params;
+
+      const product = await Product.findOne({
+        where: { slug },
       });
 
-    } catch (error) {
-      console.error("Error processing data:", error);
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found.",
+        });
+      }
 
-      return res.status(500).json({
+      const hasVariants = req.body.variants !== undefined;
+
+      // When supplied, variants must contain the FULL desired list.
+      const variants = hasVariants
+        ? parseVariants(req.body.variants)
+        : null;
+
+      transaction = await sequelize.transaction();
+
+      const updateFields = getProductFields(req.body);
+
+      // Support categorySlug as in your previous controller,
+      // and categoryId for clients that already send the ID.
+      if (req.body.categorySlug !== undefined) {
+        const category = await Category.findOne({
+          where: { slug: req.body.categorySlug },
+          transaction,
+        });
+
+        if (!category) {
+          throw new Error("Category not found.");
+        }
+
+        updateFields.categoryId = category.id;
+      } else if (req.body.categoryId !== undefined) {
+        const category = await Category.findByPk(
+          req.body.categoryId,
+          { transaction }
+        );
+
+        if (!category) {
+          throw new Error("Category not found.");
+        }
+
+        updateFields.categoryId = category.id;
+      }
+
+      Object.assign(updateFields, getUploadedImages(req.files));
+
+      await product.update(updateFields, { transaction });
+
+      if (hasVariants) {
+        const existingVariants = await ProductVariant.findAll({
+          where: { productId: product.id },
+          transaction,
+        });
+
+        const existingById = new Map(
+          existingVariants.map((v) => [String(v.id), v])
+        );
+
+        const submittedIds = new Set();
+
+        for (const variant of variants) {
+          const {
+            id,
+            quantity,
+            unit,
+            price,
+            stock,
+            sku,
+          } = variant;
+
+          if (id != null) {
+            const existing = existingById.get(String(id));
+
+            if (!existing) {
+              throw new Error(
+                `Variant ${id} does not belong to this product.`
+              );
+            }
+
+            if (submittedIds.has(String(id))) {
+              throw new Error("Duplicate variant ID.");
+            }
+
+            submittedIds.add(String(id));
+
+            await existing.update(
+              {
+                quantity,
+                unit,
+                price,
+                stock,
+                sku,
+                status: "active",
+              },
+              { transaction }
+            );
+          } else {
+            await ProductVariant.create(
+              {
+                productId: product.id,
+                quantity,
+                unit,
+                price,
+                stock,
+                sku,
+                status: "active",
+              },
+              { transaction }
+            );
+          }
+        }
+
+        // Deactivate omitted variants instead of deleting history.
+        const omitted = existingVariants.filter(
+          (v) => !submittedIds.has(String(v.id))
+        );
+
+        if (omitted.length) {
+          await ProductVariant.update(
+            { status: "deactive" },
+            {
+              where: {
+                id: {
+                  [Op.in]: omitted.map((v) => v.id),
+                },
+                productId: product.id,
+              },
+              transaction,
+            }
+          );
+        }
+      }
+
+      await transaction.commit();
+
+      const updatedProduct = await Product.findByPk(product.id, {
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: updatedProduct,
+        message: "Product updated successfully.",
+      });
+    } catch (error) {
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
+
+      console.error("Update product error:", error);
+
+      return res.status(400).json({
         success: false,
-        message: "Internal Server Error"
+        message: error.message || "Failed to update product.",
       });
     }
   },
 
   getProductsByCategorySlug: async (req, res) => {
     try {
-      const categorySlug = req.params.slug;
+      const { slug } = req.params;
 
-      const category = await Category.findOne({ where: { slug: categorySlug, status: "active" } });
+      const category = await Category.findOne({
+        where: {
+          slug,
+          status: "active",
+        },
+      });
+
       if (!category) {
-        return res.status(404).json({ success: false, message: 'Category not found' });
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
       }
 
-      const products = await Product.findAll({ where: { categoryId: category.id , status: "active" } });
-      res.status(200).json({ success: true, category, products });
+      const products = await Product.findAll({
+        where: {
+          categoryId: category.id,
+          status: "active",
+        },
+        include: [activeVariantsInclude],
+        order: [["productName", "ASC"]],
+      });
+
+      return res.status(200).json({
+        success: true,
+        category,
+        products,
+      });
     } catch (error) {
       console.error("Error while getting products:", error);
-      res.status(500).json({ success: false, message: "Error while getting products" });
+
+      return res.status(500).json({
+        success: false,
+        message: "Error while getting products",
+      });
     }
   },
 
   deleteProduct: async (req, res) => {
+    const transaction = await sequelize.transaction();
+
     try {
       const { id } = req.params;
 
-      // Deactivate product instead of deleting it
-      const [updated] = await Product.update(
-        {
-          status: "deactive"
-        },
-        {
-          where: { id }
-        }
-      );
+      const product = await Product.findByPk(id, { transaction });
 
-      if (updated) {
-        return res.status(200).json({
-          success: true,
-          message: "Product deactivated successfully"
+      if (!product) {
+        await transaction.rollback();
+
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
         });
       }
 
-      return res.status(404).json({
-        success: false,
-        message: "Product not found"
-      });
+      await product.update(
+        { status: "deactive" },
+        { transaction }
+      );
 
+      await ProductVariant.update(
+        { status: "deactive" },
+        {
+          where: {
+            productId: product.id,
+            status: "active",
+          },
+          transaction,
+        }
+      );
+
+      await transaction.commit();
+
+      return res.status(200).json({
+        success: true,
+        message: "Product and its variants deactivated successfully",
+      });
     } catch (error) {
-      console.error(`Error deactivating product: ${error.message}`);
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
+
+      console.error("Error deactivating product:", error);
 
       return res.status(500).json({
         success: false,
-        message: "Error while deactivating product"
+        message: "Error while deactivating product",
       });
     }
   },
@@ -218,124 +448,89 @@ const productController = {
   getAllProducts: async (req, res) => {
     try {
       const products = await Product.findAll({
-        where: {
-          status: "active"
-        }
+        where: { status: "active" },
+        include: [activeVariantsInclude],
+        order: [["productName", "ASC"]],
       });
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
-        data: products
+        data: products,
       });
-
     } catch (error) {
       console.error("Error fetching products:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message: "Error while fetching products"
+        message: "Error while fetching products",
       });
     }
   },
 
-  updateProduct: async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const {
-        productName, categorySlug, price, nickname1, nickname2, nickname3, restriction, type,
-        packeoption1kg, packeoption500gm, packeoption1kgrate, packeoption500gmrate,
-        description, video, recipe, productNamealsoyoumaylike, link, newLaunch, OurComOffer, oldPrice, stock, rating, review,
-      } = req.body;
-
-      const product = await Product.findOne({ where: { slug } });
-      if (!product) {
-        return res.status(404).json({ success: false, message: 'Product not found' });
-      }
-
-      let categoryId;
-      if (categorySlug) {
-        const category = await Category.findOne({ where: { slug: categorySlug } });
-        if (!category) {
-          return res.status(404).json({ success: false, message: 'Category not found' });
-        }
-        categoryId = category.id;
-      }
-
-      const updateFields = {
-        productName,
-        slug: productName ? slugify(productName, { lower: true }) : product.slug,
-        categoryId,
-        price,
-        oldPrice,
-        stock,
-        rating,
-        review,
-        description,
-        nickname1,
-        nickname2,
-        nickname3,
-        packeoption1kg,
-        packeoption500gm,
-        packeoption1kgrate,
-        packeoption500gmrate,
-        video,
-        recipe,
-        productNamealsoyoumaylike,
-        link,
-        restriction,
-        type,
-        newLaunch,
-        OurComOffer
-      };
-
-      if (req.files) {
-        if (req.files.image1) updateFields.image1 = req.files.image1[0].filename;
-        if (req.files.image2) updateFields.image2 = req.files.image2[0].filename;
-        if (req.files.image3) updateFields.image3 = req.files.image3[0].filename;
-        if (req.files.image4) updateFields.image4 = req.files.image4[0].filename;
-        if (req.files.image5) updateFields.image5 = req.files.image5[0].filename;
-      }
-
-      const [updated] = await Product.update(updateFields, { where: { slug } });
-      if (updated) {
-        const updatedProduct = await Product.findOne({ where: { slug } });
-        res.status(200).json({ success: true, data: updatedProduct, message: 'Product updated successfully.' });
-      } else {
-        res.status(400).json({ success: false, message: 'Failed to update product' });
-      }
-    } catch (error) {
-      console.error(`Error updating product: ${error.message}`);
-      res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-  },
 
   getProduct: async (req, res) => {
     try {
       const { slug } = req.params;
+
       const product = await Product.findOne({
-        where: { slug, status: "active" },
-        include: [{ model: Category }]
+        where: {
+          slug,
+          status: "active",
+        },
+        include: [
+          { model: Category },
+          activeVariantsInclude,
+        ],
       });
 
-
       if (!product) {
-        return res.status(404).json({ message: 'Product not found' });
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
       }
 
-      res.status(200).json(product);
+      return res.status(200).json(product);
     } catch (error) {
-      console.error('Error fetching product:', error);
-      res.status(500).json({ message: 'Server error' });
+      console.error("Error fetching product:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
     }
   },
 
   getProductsBySlugs: async (req, res) => {
     try {
-      const slugs = req.body.slugs;
-      const products = await Product.findAll({ where: { slug: slugs, status: "active" } });
-      res.json(products);
+      const { slugs } = req.body;
+
+      if (!Array.isArray(slugs)) {
+        return res.status(400).json({
+          success: false,
+          message: "slugs must be an array",
+        });
+      }
+
+      const products = await Product.findAll({
+        where: {
+          slug: { [Op.in]: slugs },
+          status: "active",
+        },
+        include: [activeVariantsInclude],
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: products,
+      });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error fetching products by slugs:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching products",
+      });
     }
   },
 
@@ -343,100 +538,156 @@ const productController = {
 
   getNewLaunch: async (req, res) => {
     try {
-      console.log('Fetching new launches...');
       const newLaunches = await Product.findAll({
-        where: { newLaunch: true, status: "active" } // Or true
+        where: {
+          newLaunch: true,
+          status: "active",
+        },
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+            where: { status: "active" },
+            required: false,
+          },
+        ],
       });
-      console.log('New launches found:', newLaunches);
-      res.status(200).json(newLaunches);
+
+      return res.status(200).json(newLaunches);
     } catch (error) {
-      console.error('Error fetching new launches:', error);
-      res.status(500).json({ message: 'Error fetching new launches', error });
+      console.error("Error fetching new launches:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching new launches",
+      });
     }
   },
   getOurComboOfer: async (req, res) => {
     try {
-      console.log('Fetching new ourCombooofer...');
-      const OurComOffer = await Product.findAll({
-        where: { OurComOffer: true, status: "active" } // Or true
+      const comboOffers = await Product.findAll({
+        where: {
+          OurComOffer: true,
+          status: "active",
+        },
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+            where: { status: "active" },
+            required: false,
+          },
+        ],
       });
-      console.log('Ourcombooofer found:', OurComOffer);
-      res.status(200).json(OurComOffer);
+
+      return res.status(200).json(comboOffers);
     } catch (error) {
-      console.error('Error fetching new launches:', error);
-      res.status(500).json({ message: 'Error fetching new launches', error });
+      console.error("Error fetching combo offers:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching combo offers",
+      });
     }
   },
 
   getTopRatedProducts: async (req, res) => {
     try {
-      // Step 1: Get products with rating >= 4.5
-      let highRatedProducts = await Product.findAll({
+      const highRatedProducts = await Product.findAll({
         where: {
-          rating: {
-            [Op.gte]: 4.5
-          },
-          status: "active"
+          rating: { [Op.gte]: 4.5 },
+          status: "active",
         },
-        order: [['rating', 'DESC']]
+        include: [activeVariantsInclude],
+        order: [
+          ["rating", "DESC"],
+          ["id", "DESC"],
+        ],
+        limit: 5,
       });
 
-      // Step 2: If less than 5, fetch more products
-      if (highRatedProducts.length < 5) {
-        const remainingCount = 5 - highRatedProducts.length;
+      let products = highRatedProducts;
+
+      if (products.length < 5) {
+        const existingIds = products.map((p) => p.id);
 
         const otherProducts = await Product.findAll({
           where: {
-            id: {
-              [Op.notIn]: highRatedProducts.map(p => p.id)
-            }
+            status: "active",
+            ...(existingIds.length
+              ? { id: { [Op.notIn]: existingIds } }
+              : {}),
           },
-          order: [['rating', 'DESC']],
-          limit: remainingCount
+          include: [activeVariantsInclude],
+          order: [
+            ["rating", "DESC"],
+            ["id", "DESC"],
+          ],
+          limit: 5 - products.length,
         });
 
-        highRatedProducts = [...highRatedProducts, ...otherProducts];
+        products = [...products, ...otherProducts];
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
-        data: highRatedProducts
+        data: products,
       });
-
     } catch (error) {
       console.error("Error fetching top rated products:", error);
-      res.status(500).json({
+
+      return res.status(500).json({
         success: false,
-        message: "Error fetching top rated products"
+        message: "Error fetching top rated products",
       });
     }
   },
 
   updateStockByAdmin: async (req, res) => {
     try {
-      const { productId } = req.params;
+      const { variantId } = req.params;
       const { stock } = req.body;
 
-      const product = await Product.findByPk(productId);
-
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+      if (
+        stock === undefined ||
+        stock === null ||
+        !Number.isInteger(Number(stock)) ||
+        Number(stock) < 0 ||
+        String(stock).trim() === ""
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Stock must be a non-negative integer",
+        });
       }
 
-      product.stock = stock;
+      const variant = await ProductVariant.findByPk(variantId);
 
-      await product.save();
+      if (!variant) {
+        return res.status(404).json({
+          success: false,
+          message: "Product variant not found",
+        });
+      }
 
-      res.json({
-        message: "Stock updated successfully",
-        product
+      await variant.update({
+        stock: Number(stock),
       });
 
+      return res.status(200).json({
+        success: true,
+        message: "Variant stock updated successfully",
+        data: variant,
+      });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
+      console.error("Error updating variant stock:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error while updating stock",
+      });
     }
-  }
+  },
 
 };
 
