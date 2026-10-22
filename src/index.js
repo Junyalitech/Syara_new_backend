@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 // CORS setup
 const corsOptions = {
   origin: '*', // Adjust as needed
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
