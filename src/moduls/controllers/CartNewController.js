@@ -336,7 +336,7 @@ exports.getUserCart = async (req, res) => {
                 },
                 {
                     model: Product,
-                    attributes: ['productName', 'price', 'image1'],
+                    attributes: ['id', 'productName', 'image1'],
                 },
             ],
         });
@@ -368,7 +368,7 @@ exports.getCartWithProducts = async (req, res) => {
                 },
                 {
                     model: Product,
-                    attributes: ['productName', 'price', 'image1', 'packeoption1kgrate', 'packeoption500gmrate'],
+                    attributes: ['id', 'productName', 'image1'],
                 },
             ],
         });
@@ -408,11 +408,8 @@ exports.getCartWithProducts = async (req, res) => {
                             quantity: cart[`Pro_Qty${i}`],
                             package: cart[`Product${i}_package`] || null, // ✅ ADD THIS
                             productName: productDetail.productName,
-                            price: productDetail.price,
-                            image: productDetail.image1,
-                            Pack1kgprice: productDetail.packeoption1kgrate,
-                            Pack500gprice: productDetail.packeoption500gmrate
-                        });
+                                                        image: productDetail.image1,
+                                                                                });
                     }
                 }
             }
