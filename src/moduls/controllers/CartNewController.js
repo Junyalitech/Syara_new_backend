@@ -357,67 +357,89 @@ exports.getUserCart = async (req, res) => {
 // Controller to get cart with product details
 exports.getCartWithProducts = async (req, res) => {
     try {
-        const userId = req.params.userId; // Assuming you'll pass userId as a parameter
-        // Fetch the cart items for the given userId
-        const carts = await Cart.findAll({
-            where: { userId },
-            include: [
-                {
-                    model: User,
-                    attributes: ['name'],
-                },
-                {
-                    model: Product,
-                    attributes: ['id', 'productName', 'image1'],
-                },
-            ],
-        });
+        const userId = req.params.userId;
+        const carts = await Cart.findAll({ where: { userId } });
 
-        const productIds = [];
-        carts.forEach(cart => {
-            for (let i = 1; i <= 10; i++) {
-                // Collect product IDs from cart
-                if (cart[`Product${i}`]) productIds.push(cart[`Product${i}`]);
-            }
-        });
-
-
-
-        // Ensure productIds is not empty before making a query
-        let productDetails = [];
-        if (productIds.length > 0) {
-            // Use findAll if using Sequelize
-            productDetails = await Product.findAll({
-                where: {
-                    id: productIds, // Match with Sequelize ID
-                },
-            });
+        if (!carts.length) {
+            return res.status(200).json([]);
         }
 
-        // Create a response with cart data and populated products
-        const cartData = carts.map(cart => {
-            const products = [];
+        const productIds = [];
+        carts.forEach((cart) => {
             for (let i = 1; i <= 10; i++) {
-                if (cart[`Product${i}`]) {
-                    // Find the product details
-                    const productDetail = productDetails.find(prod => prod.id === cart[`Product${i}`]);
-
-                    if (productDetail) {
-                        products.push({
-                            productId: cart[`Product${i}`],
-                            quantity: cart[`Pro_Qty${i}`],
-                            package: cart[`Product${i}_package`] || null, // ✅ ADD THIS
-                            productName: productDetail.productName,
-                                                        image: productDetail.image1,
-                                                                                });
-                    }
-                }
+                const id = cart[`Product${i}`];
+                if (id !== null && id !== undefined && id !== "") productIds.push(Number(id));
             }
+        });
+
+        const uniqueProductIds = [...new Set(productIds)];
+        const productDetails = uniqueProductIds.length
+            ? await Product.findAll({ where: { id: uniqueProductIds } })
+            : [];
+
+        // Resolve the variant model from Sequelize's registered models.
+        const models = Product.sequelize?.models || {};
+        const ProductVariant =
+            models.ProductVariant ||
+            models.ProductVariants ||
+            models.product_variants ||
+            models.product_variant;
+
+        const productVariants = ProductVariant && uniqueProductIds.length
+            ? await ProductVariant.findAll({ where: { productId: uniqueProductIds } })
+            : [];
+
+        const cartData = carts.map((cart) => {
+            const products = [];
+
+            for (let i = 1; i <= 10; i++) {
+                const rawId = cart[`Product${i}`];
+                if (rawId === null || rawId === undefined || rawId === "") continue;
+
+                const productId = Number(rawId);
+                const productDetail = productDetails.find((p) => Number(p.id) === productId);
+                if (!productDetail) continue;
+
+                const packageLabel = String(cart[`Product${i}_package`] || "").trim();
+                const normalizedPackage = packageLabel.toLowerCase().replace(/\s+/g, " ");
+
+                // Match by productId + package label, as requested; don't use variantId as cart identity.
+                const variant = productVariants.find((v) => {
+                    if (Number(v.productId) !== productId) return false;
+                    const quantity = Number(v.quantity);
+                    const unit = String(v.unit || "").toLowerCase();
+                    const label = `${quantity.toFixed(3)} ${unit}`.trim().toLowerCase().replace(/\s+/g, " ");
+                    return label === normalizedPackage;
+                }) || productVariants.find((v) => Number(v.productId) === productId);
+
+                const currentPrice = variant ? Number(variant.price || 0) : 0;
+
+                products.push({
+                    productId,
+                    quantity: Number(cart[`Pro_Qty${i}`] || 1),
+                    package: packageLabel || (variant
+                        ? `${Number(variant.quantity).toFixed(3)} ${variant.unit}`
+                        : null),
+                    productName: productDetail.productName,
+                    image: productDetail.image1,
+                    price: currentPrice,
+                    sellingPrice: currentPrice,
+                    mrp: currentPrice,
+                    stock: variant ? Number(variant.stock || 0) : null,
+                    variantId: variant ? variant.id : null,
+                    unit: variant ? variant.unit : null,
+                    variantQuantity: variant ? Number(variant.quantity) : null,
+                    slug: productDetail.slug,
+                    is_liquid: productDetail.is_liquid,
+                });
+            }
+
             return {
                 cartId: cart.cartId,
                 userId: cart.userId,
                 Shipping_street: cart.Shipping_street,
                 Shipping_city: cart.Shipping_city,
+                Shipping_pincode: cart.Shipping_pincode,
                 Shipping_state: cart.Shipping_state,
                 Shipping_country: cart.Shipping_country,
                 Shipping_contact: cart.Shipping_contact,
@@ -425,20 +447,18 @@ exports.getCartWithProducts = async (req, res) => {
                 tax: cart.tax,
                 Grand_Total: cart.Grand_Total,
                 payment_status: cart.payment_status,
-                products: products,
+                products,
             };
         });
 
-
-
         return res.status(200).json(cartData);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error });
+        console.error("Error fetching cart with products:", error);
+        return res.status(500).json({ message: "Server Error", error: error.message });
     }
-
-
 };
+
+
 // Update Order function
 
 // Assuming Express and necessary packages are already imported
