@@ -423,7 +423,7 @@ exports.getCartWithProducts = async (req, res) => {
                     productName: productDetail.productName,
                     image: productDetail.image1,
                     price: currentPrice,
-                    sellingPrice: variant ? variant.sellingPrice : currentPrice,
+                    sellingPrice: variant ? Number(variant.sellingPrice) : currentPrice,
                     mrp: currentPrice,
                     stock: variant ? Number(variant.stock || 0) : null,
                     variantId: variant ? variant.id : null,
