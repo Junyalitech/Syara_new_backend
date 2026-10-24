@@ -135,11 +135,12 @@ const productController = {
       );
 
       await ProductVariant.bulkCreate(
-        variants.map(({ quantity, unit, price, stock, sku }) => ({
+        variants.map(({ quantity, unit, price, sellingPrice, stock, sku }) => ({
           productId: product.id,
           quantity,
           unit,
           price,
+          sellingPrice,
           stock,
           sku,
         })),
@@ -253,6 +254,7 @@ const productController = {
             quantity,
             unit,
             price,
+            sellingPrice,
             stock,
             sku,
           } = variant;
@@ -277,6 +279,7 @@ const productController = {
                 quantity,
                 unit,
                 price,
+                sellingPrice,
                 stock,
                 sku,
                 status: "active",
@@ -290,6 +293,7 @@ const productController = {
                 quantity,
                 unit,
                 price,
+                sellingPrice,
                 stock,
                 sku,
                 status: "active",

@@ -35,6 +35,12 @@ function parseVariants(input) {
 
         const quantity = Number(variant.quantity);
         const price = Number(variant.price);
+        const sellingPrice =
+            variant.sellingPrice === undefined ||
+            variant.sellingPrice === null ||
+            variant.sellingPrice === ""
+                ? price
+                : Number(variant.sellingPrice);
         const stock = Number(variant.stock ?? 0);
         const unit = variant.unit;
 
@@ -43,12 +49,15 @@ function parseVariants(input) {
             quantity <= 0 ||
             !Number.isFinite(price) ||
             price < 0 ||
+            !Number.isFinite(sellingPrice) ||
+            sellingPrice < 0 ||
+            sellingPrice > price ||
             !Number.isInteger(stock) ||
             stock < 0 ||
             !ALLOWED_UNITS.includes(unit)
         ) {
             throw new Error(
-                "Each packet requires a valid quantity, unit, price and stock."
+                "Each packet requires a valid quantity, unit, MRP, selling price and stock. Selling price must not exceed MRP."
             );
         }
 
@@ -67,6 +76,7 @@ function parseVariants(input) {
             quantity,
             unit,
             price,
+            sellingPrice,
             stock,
             sku: variant.sku || null,
         };
